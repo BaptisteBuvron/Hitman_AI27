@@ -1,29 +1,30 @@
 import os
-from hitman.hitman import HC
+from hitman.hitman import HC, complete_map_example
 from utils import OS
 import subprocess
 
 
 #globals
-N_ROW = 3
-N_COL = 3 
+N_ROW = 7
+N_COL = 7
 VARIABLES = dict()
 CLAUSES = list()
 OS_USER: OS = OS.none
+DEBUG: bool = False
 
 def main():
     global VARIABLES 
     VARIABLES = create_variables()
     create_clauses()
+    if (DEBUG):
+        add_clauses_map_test()
     write_dimacs_files()
     execute_gophersat()
 
 
 def get_os():
     global OS_USER
-    #check if OS_USER is defined
     if OS_USER == OS.none:
-        #ask for OS
         print("What OS are you using?")
         valid_os = [os for os in OS if os != OS.none]
         for os in valid_os:
@@ -37,7 +38,6 @@ def get_os():
     return OS_USER
 
 
-#Create a variable for each possibility of class HC(Enum):
 def create_variables():
     dict = {}
     variable: int = 1
@@ -56,7 +56,7 @@ def get_variable(type, row: int, col: int):
 
 def create_clauses():
     global CLAUSES
-    #Clause 1: Each cell has a type (EMPTY or WALL or GUARD_N...)
+    #Clauses 1: Each cell has a type (EMPTY or WALL or GUARD_N...)
     clause = []
     for i in range(0, N_ROW):
         for j in range(0, N_COL):
@@ -66,7 +66,7 @@ def create_clauses():
             CLAUSES.append(clause)
             clause = []
 
-    #Clause 2: Each cell has only one type
+    #Clauses 2: Each cell has only one type
     for i in range(0, N_ROW):
         for j in range(0, N_COL):
             for type in HC:
@@ -75,9 +75,37 @@ def create_clauses():
                         if type2 not in [HC.N, HC.S, HC.E, HC.W] and type != type2:
                             CLAUSES.append([-get_variable(type, i, j), -get_variable(type2, i, j)])
             
+    #Clauses 3: The cell PIANO_WIRE / Target / Suit exists only one time
+    clausePiano = []
+    clauseSuit = []
+    clauseTarget = []
+    for i in range(0, N_ROW):
+        for j in range(0, N_COL):
+            clausePiano.append(-get_variable(HC.PIANO_WIRE, i, j))
+            clauseSuit.append(-get_variable(HC.SUIT, i, j))
+            clauseTarget.append(-get_variable(HC.TARGET, i, j))
+    CLAUSES.append(clausePiano)
+    CLAUSES.append(clauseSuit)
+    CLAUSES.append(clauseTarget)
+
+    #If the cell is a PIANO_WIRE/TARGET/SUIT, all the other cells are not a PIANO_WIRE/TARGET/SUIT
+    for i in range(0, N_ROW):
+        for j in range(0, N_COL):
+            for k in range(0, N_ROW):
+                for l in range(0, N_COL):
+                    if i != k or j != l:
+                        for type in [HC.PIANO_WIRE, HC.SUIT, HC.TARGET]:
+                            CLAUSES.append([-get_variable(type, i, j), -get_variable(type, k, l)])
+
+
+def add_clauses_map_test():
+    global CLAUSES
+    for key in complete_map_example:
+        CLAUSES.append([get_variable(HC.EMPTY, key[0], key[1])])        
+
 
 def write_dimacs_files():
-    global CLAUSES     
+    global CLAUSES
     check_current_directory()
     #Write the clauses in a file if exists replace it
     with open("gophersat/hitman.cnf", "w") as f:
@@ -100,7 +128,7 @@ def execute_gophersat():
         gophersat_path = "gophersat/gophersat_1_13_darwin_amd64"
     elif os_user == OS.MAC_arm:
         gophersat_path = "gophersat/gophersat_1_13_darwin_arm64"
-    result = subprocess.run([gophersat_path, "hitman.cnf"], capture_output=True, text=True)
+    result = subprocess.run([gophersat_path, "gophersat/hitman.cnf"], capture_output=True, text=True)
     print(result.stdout)
 
 def check_current_directory():
