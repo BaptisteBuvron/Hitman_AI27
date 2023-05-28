@@ -91,8 +91,8 @@ def create_clauses():
     #If the cell is a PIANO_WIRE/TARGET/SUIT, all the other cells are not a PIANO_WIRE/TARGET/SUIT
     for i in range(0, N_ROW):
         for j in range(0, N_COL):
-            for k in range(0, N_ROW):
-                for l in range(0, N_COL):
+            for k in range(i, N_ROW):
+                for l in range(j, N_COL):
                     if i != k or j != l:
                         for type in [HC.PIANO_WIRE, HC.SUIT, HC.TARGET]:
                             CLAUSES.append([-get_variable(type, i, j), -get_variable(type, k, l)])
