@@ -44,7 +44,7 @@ def main():
     pprint(status)
     pprint(hr.send_content({(0, 0): HC.EMPTY}))
     pprint(hr.send_content(complete_map_example))
-    complete_map_example[(6, 0)] = HC.EMPTY
+    complete_map_example[(7, 0)] = HC.EMPTY
     pprint(hr.send_content(complete_map_example))
 
 

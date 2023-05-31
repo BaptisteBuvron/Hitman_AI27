@@ -1,25 +1,188 @@
 import os
-from hitman.hitman import HC, complete_map_example
+from pprint import pprint
+from hitman.hitman import HC, HitmanReferee, complete_map_example
 from utils import OS
 import subprocess
 
-
-#globals
+# globals
 N_ROW = 7
 N_COL = 7
+N_GUEST = None
+N_GUARD = None
 VARIABLES = dict()
 CLAUSES = list()
 OS_USER: OS = OS.none
-DEBUG: bool = False
+DEBUG: bool = True
+BLOCKED_CELLS = set(tuple())
+SEEN_CELLS = set(tuple())
+HR: HitmanReferee
+
 
 def main():
-    global VARIABLES 
-    VARIABLES = create_variables()
+    global VARIABLES
+    global HR
+    HR = HitmanReferee()
+
+    room, status = start_phase1()
     create_clauses()
-    if (DEBUG):
-        add_clauses_map_test()
+
+    start_exploring(room, status)
+
+    # if (DEBUG):
+    #     add_clauses_map_test()
     write_dimacs_files()
     execute_gophersat()
+
+
+def start_exploring(room, status):
+    visited = set()
+    # TODO change move
+    explore(room, visited, status)
+    return room
+
+
+def start_phase1():
+    global HR, N_ROW, N_COL, N_GUARD, N_GUEST
+    status = HR.start_phase1()
+    N_ROW = int(status["m"])
+    N_COL = int(status["n"])
+    N_GUARD = int(status["guard_count"])
+    N_GUEST = int(status["civil_count"])
+    create_variables()
+    room = [[0 for j in range(N_COL)] for i in range(N_ROW)]
+    analyse_status(status, room)
+    return room, status
+
+
+def analyse_status(status, room):
+    global CLAUSES, BLOCKED_CELLS
+    pprint(status)
+    # From the vision of the hitman, we can see the type of the 2 cells in front of him
+    for vision in status["vision"]:
+        # TODO Add unsafe cells (gards, walls)
+        if room[N_ROW - 1 - int(vision[0][1])][int(vision[0][0])] == 0:
+            # (0,0) is the bottom left corner
+            room[N_ROW - 1 - int(vision[0][1])][int(vision[0][0])] = HC(vision[1])
+            CLAUSES.append(
+                [get_variable(HC(vision[1]), int(vision[0][0]), int(vision[0][1]))]
+            )
+            if HC(vision[1]) == HC.WALL:
+                BLOCKED_CELLS.add((int(vision[0][0]), int(vision[0][1])))
+    if DEBUG:
+        #beautifull print of the array [][] room
+        for i in range(N_ROW):
+            for j in range(N_COL):
+                longueur = 15
+                print(room[i][j], end=" "*(longueur-len(str(room[i][j]))))
+            print()
+    pass
+
+
+def explore(room, visited, status):
+    position = status["position"]
+    analyse_status(status, room)
+    orientation = HC(status["orientation"])
+    visited.add(position)
+    print("Visited: ", visited)
+    input("Press Enter to continue...")
+    # CHOOSE an ORIENTATION (turn_clockwise, turn_anti_clockwise) or GO FORWARD
+
+    if is_blocked(room, visited, position, orientation):
+        print("BLOCKED")
+        if is_valid_position(move_forward(position, orientation), room):
+            print("Blocked, GO FORWARD")
+            explore(room, visited, HR.move())
+        else:
+            print("Blocked, TURN CLOCKWISE")
+            explore(room, visited, HR.turn_clockwise())
+
+    if is_valid_position(move_forward(position, turn_anti_clockwise(orientation)), room) and move_forward(position, turn_anti_clockwise(orientation)) not in visited:
+        print("TURN ANTI CLOCKWISE")
+        explore(room, visited, HR.turn_anti_clockwise())
+    elif is_valid_position(move_forward(position, orientation), room) and move_forward(position, orientation) not in visited:
+        print("GO FORWARD")
+        explore(room, visited, HR.move())
+    else:
+        print("TURN CLOCKWISE")
+        explore(room, visited, HR.turn_clockwise())
+
+
+def is_blocked(room, visited, position, orientation):
+    # If all square arround are walls,guard or visited
+    turn = turn_clockwise(orientation)
+    if (
+            is_valid_position(move_forward(position, orientation), room)
+            and move_forward(position, orientation) not in visited
+    ):
+        return False
+    if (
+            is_valid_position(move_forward(position, turn), room)
+            and move_forward(position, turn) not in visited
+    ):
+        return False
+    if (
+            is_valid_position(
+                move_forward(position, turn_anti_clockwise(orientation)), room
+            )
+            and move_forward(position, turn_anti_clockwise(orientation)) not in visited
+    ):
+        return False
+    if (
+            is_valid_position(move_forward(position, turn_clockwise(turn)), room)
+            and move_forward(position, turn_clockwise(turn)) not in visited
+    ):
+        return False
+    return True
+
+
+def is_valid_position(position, room):
+    # Check if the position is within the room boundaries and not a wall
+    i, j = position
+    if (
+            0 <= i < N_COL
+            and 0 <= j < N_ROW
+            and room[N_ROW - 1 - j][i]
+            not in [HC.WALL, HC.GUARD_E, HC.GUARD_N, HC.GUARD_S, HC.GUARD_W]
+    ):
+        return True
+    return False
+
+
+def move_forward(position, orientation):
+    # Move one cell forward in the current orientation
+    i, j = position
+    if orientation == HC.N:
+        return (i, j + 1)
+    elif orientation == HC.S:
+        return (i, j - 1)
+    elif orientation == HC.W:
+        return (i - 1, j)
+    elif orientation == HC.E:
+        return (i + 1, j)
+
+
+def turn_clockwise(orientation):
+    # Turn to the next orientation (clockwise)
+    if orientation == HC.N:
+        return HC.E
+    elif orientation == HC.E:
+        return HC.S
+    elif orientation == HC.S:
+        return HC.W
+    elif orientation == HC.W:
+        return HC.N
+
+
+def turn_anti_clockwise(orientation):
+    # Turn to the next orientation (anticlockwise)
+    if orientation == HC.N:
+        return HC.W
+    elif orientation == HC.W:
+        return HC.S
+    elif orientation == HC.S:
+        return HC.E
+    elif orientation == HC.E:
+        return HC.N
 
 
 def get_os():
@@ -30,7 +193,7 @@ def get_os():
         for os in valid_os:
             print(str(os.value) + ": " + os.name)
         os = int(input())
-        #set OS from the input
+        # set OS from the input
         if os not in [os.value for os in valid_os]:
             print("Invalid OS")
             get_os()
@@ -39,15 +202,17 @@ def get_os():
 
 
 def create_variables():
+    global VARIABLES
     dict = {}
     variable: int = 1
-    for i in range(0, N_ROW):
-        for j in range(0, N_COL):
+    for i in range(0, N_COL):
+        for j in range(0, N_ROW):
             for type in HC:
                 if type not in [HC.N, HC.S, HC.E, HC.W]:
-                    dict["_".join([str(type.value),str(i),str(j)])] = variable
+                    # I = row, J = COL
+                    dict["_".join([str(type.value), str(i), str(j)])] = 0
                     variable += 1
-    return dict
+    VARIABLES = dict
 
 
 def get_variable(type, row: int, col: int):
@@ -56,31 +221,33 @@ def get_variable(type, row: int, col: int):
 
 def create_clauses():
     global CLAUSES
-    #Clauses 1: Each cell has a type (EMPTY or WALL or GUARD_N...)
+    # Clauses 1: Each cell has a type (EMPTY or WALL or GUARD_N...)
     clause = []
-    for i in range(0, N_ROW):
-        for j in range(0, N_COL):
+    for i in range(0, N_COL):
+        for j in range(0, N_ROW):
             for type in HC:
                 if type not in [HC.N, HC.S, HC.E, HC.W]:
                     clause.append(get_variable(type, i, j))
             CLAUSES.append(clause)
             clause = []
 
-    #Clauses 2: Each cell has only one type
-    for i in range(0, N_ROW):
-        for j in range(0, N_COL):
+    # Clauses 2: Each cell has only one type
+    for i in range(0, N_COL):
+        for j in range(0, N_ROW):
             for type in HC:
                 if type not in [HC.N, HC.S, HC.E, HC.W]:
                     for type2 in HC:
                         if type2 not in [HC.N, HC.S, HC.E, HC.W] and type != type2:
-                            CLAUSES.append([-get_variable(type, i, j), -get_variable(type2, i, j)])
-            
-    #Clauses 3: The cell PIANO_WIRE / Target / Suit exists only one time
+                            CLAUSES.append(
+                                [-get_variable(type, i, j), -get_variable(type2, i, j)]
+                            )
+
+    # Clauses 3: The cell PIANO_WIRE / Target / Suit exists only one time
     clausePiano = []
     clauseSuit = []
     clauseTarget = []
-    for i in range(0, N_ROW):
-        for j in range(0, N_COL):
+    for i in range(0, N_COL):
+        for j in range(0, N_ROW):
             clausePiano.append(-get_variable(HC.PIANO_WIRE, i, j))
             clauseSuit.append(-get_variable(HC.SUIT, i, j))
             clauseTarget.append(-get_variable(HC.TARGET, i, j))
@@ -88,32 +255,33 @@ def create_clauses():
     CLAUSES.append(clauseSuit)
     CLAUSES.append(clauseTarget)
 
-    #If the cell is a PIANO_WIRE/TARGET/SUIT, all the other cells are not a PIANO_WIRE/TARGET/SUIT
-    for i in range(0, N_ROW):
-        for j in range(0, N_COL):
-            for k in range(i, N_ROW):
-                for l in range(j, N_COL):
+    # If the cell is a PIANO_WIRE/TARGET/SUIT, all the other cells are not a PIANO_WIRE/TARGET/SUIT
+    for i in range(0, N_COL):
+        for j in range(0, N_ROW):
+            for k in range(i, N_COL):
+                for l in range(j, N_ROW):
                     if i != k or j != l:
                         for type in [HC.PIANO_WIRE, HC.SUIT, HC.TARGET]:
-                            CLAUSES.append([-get_variable(type, i, j), -get_variable(type, k, l)])
+                            CLAUSES.append(
+                                [-get_variable(type, i, j), -get_variable(type, k, l)]
+                            )
 
 
 def add_clauses_map_test():
     global CLAUSES
     for key in complete_map_example:
-        CLAUSES.append([get_variable(HC.EMPTY, key[0], key[1])])        
+        CLAUSES.append([get_variable(HC.EMPTY, key[0], key[1])])
 
 
 def write_dimacs_files():
     global CLAUSES
     check_current_directory()
-    #Write the clauses in a file if exists replace it
+    # Write the clauses in a file if exists replace it
     with open("gophersat/hitman.cnf", "w") as f:
         f.write("p cnf " + str(len(VARIABLES)) + " " + str(len(CLAUSES)) + "\n")
         for clause in CLAUSES:
             f.write(" ".join([str(x) for x in clause]) + " 0\n")
     pass
-
 
 
 def execute_gophersat():
@@ -128,13 +296,17 @@ def execute_gophersat():
         gophersat_path = "gophersat/gophersat_1_13_darwin_amd64"
     elif os_user == OS.MAC_arm:
         gophersat_path = "gophersat/gophersat_1_13_darwin_arm64"
-    result = subprocess.run([gophersat_path, "gophersat/hitman.cnf"], capture_output=True, text=True)
+    result = subprocess.run(
+        [gophersat_path, "gophersat/hitman.cnf"], capture_output=True, text=True
+    )
     print(result.stdout)
+
 
 def check_current_directory():
     if os.getcwd() != os.path.dirname(os.path.realpath(__file__)):
         print("Please execute this script from the root directory")
         exit(1)
-        
+
+
 if __name__ == "__main__":
     main()
