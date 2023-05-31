@@ -84,7 +84,12 @@ def explore(room, visited, status):
     orientation = HC(status["orientation"])
     visited.add(position)
     print("Visited: ", visited)
-    input("Press Enter to continue...")
+    #input 0 to exit the function
+    choice = input("Enter 0 to exit the function: ")
+    if choice == "0":
+        print("EXIT")
+        return
+
     # CHOOSE an ORIENTATION (turn_clockwise, turn_anti_clockwise) or GO FORWARD
 
     if is_blocked(room, visited, position, orientation):
@@ -105,6 +110,7 @@ def explore(room, visited, status):
     else:
         print("TURN CLOCKWISE")
         explore(room, visited, HR.turn_clockwise())
+
 
 
 def is_blocked(room, visited, position, orientation):
@@ -210,7 +216,7 @@ def create_variables():
             for type in HC:
                 if type not in [HC.N, HC.S, HC.E, HC.W]:
                     # I = row, J = COL
-                    dict["_".join([str(type.value), str(i), str(j)])] = 0
+                    dict["_".join([str(type.value), str(i), str(j)])] = variable
                     variable += 1
     VARIABLES = dict
 
