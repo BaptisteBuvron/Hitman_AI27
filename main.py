@@ -14,7 +14,6 @@ CLAUSES = list()
 OS_USER: OS = OS.none
 DEBUG: bool = True
 BLOCKED_CELLS = set(tuple())
-SEEN_CELLS = set(tuple())
 HR: HitmanReferee
 
 
@@ -68,12 +67,19 @@ def analyse_status(status, room):
             )
             if HC(vision[1]) == HC.WALL:
                 BLOCKED_CELLS.add((int(vision[0][0]), int(vision[0][1])))
+
+    if status["is_in_guard_range"]:
+        # Il y a un garde dans une des 4 cases autour de nous
+        pass
+    if status["hear"]:
+        # On a entendu x garde ou un civil
+        pass
     if DEBUG:
-        #beautifull print of the array [][] room
+        # beautifull print of the array [][] room
         for i in range(N_ROW):
             for j in range(N_COL):
                 longueur = 15
-                print(room[i][j], end=" "*(longueur-len(str(room[i][j]))))
+                print(room[i][j], end=" " * (longueur - len(str(room[i][j]))))
             print()
     pass
 
@@ -84,36 +90,109 @@ def explore(room, visited, status):
     orientation = HC(status["orientation"])
     visited.add(position)
     print("Visited: ", visited)
-    #input 0 to exit the function
-    choice = input("Enter 0 to exit the function: ")
-    if choice == "0":
-        print("EXIT")
-        return
-
+    input("Press Enter to continue...")
     # CHOOSE an ORIENTATION (turn_clockwise, turn_anti_clockwise) or GO FORWARD
-
     if is_blocked(room, visited, position, orientation):
         print("BLOCKED")
         if is_valid_position(move_forward(position, orientation), room):
             print("Blocked, GO FORWARD")
             explore(room, visited, HR.move())
         else:
-            print("Blocked, TURN CLOCKWISE")
-            explore(room, visited, HR.turn_clockwise())
+            print("Blocked, TURN ANTICLOCKWISE")
+            explore(room, visited, HR.turn_anti_clockwise())
 
-    if is_valid_position(move_forward(position, turn_anti_clockwise(orientation)), room) and move_forward(position, turn_anti_clockwise(orientation)) not in visited:
-        print("TURN ANTI CLOCKWISE")
-        explore(room, visited, HR.turn_anti_clockwise())
-    elif is_valid_position(move_forward(position, orientation), room) and move_forward(position, orientation) not in visited:
-        print("GO FORWARD")
+    #Choose the next move to optimize the new explored cells (is_position_discovered())
+    #For each move, we check the number of new cells supposed discovered
+    #We choose the move with the most new cells discovered
+
+    dict_choose_move = dict()
+    for move in ["move", "turn_anti_clockwise", "turn_clockwise", "double_turn"]:
+        if move == "move":
+            if is_valid_position(move_forward(position, orientation), room):
+                dict_choose_move[move] = count_max_new_cells_discovered(room, move_forward(position,orientation), orientation)
+            else:
+                dict_choose_move[move] = -1
+        elif move == "turn_anti_clockwise":
+            dict_choose_move[move] = count_max_new_cells_discovered(room, position, turn_anti_clockwise(orientation))
+        elif move == "turn_clockwise":
+            dict_choose_move[move] = count_max_new_cells_discovered(room, position, turn_clockwise(orientation))
+        elif move == "double_turn":
+            dict_choose_move[move] = count_max_new_cells_discovered(room, position, turn_clockwise(turn_clockwise(orientation)))
+
+    print(dict_choose_move)
+    #We choose the move with the most new cells discovered
+    move = max(dict_choose_move, key=dict_choose_move.get)
+    if move == "move":
+        print("MOVE")
         explore(room, visited, HR.move())
-    else:
+    elif move == "turn_clockwise":
         print("TURN CLOCKWISE")
         explore(room, visited, HR.turn_clockwise())
+    elif move == "turn_anti_clockwise":
+        print("TURN ANTI CLOCKWISE")
+        explore(room, visited, HR.turn_anti_clockwise())
+    elif move == "double_turn":
+        print("DOUBLE TURN")
+        status = HR.turn_clockwise()
+        analyse_status(status, room)
+        status = HR.turn_clockwise()
+        analyse_status(status, room)
+        explore(room, visited, status)
 
 
+
+    # if is_valid_position(move_forward(position, turn_anti_clockwise(orientation)), room) and move_forward(position,
+    #                                                                                                       turn_anti_clockwise(
+    #                                                                                                           orientation)) not in visited:
+    #     print("TURN ANTI CLOCKWISE")
+    #     explore(room, visited, HR.turn_anti_clockwise())
+    # elif is_valid_position(move_forward(position, orientation), room) and move_forward(position,
+    #                                                                                    orientation) not in visited:
+    #     print("GO FORWARD")
+    #     explore(room, visited, HR.move())
+    # else:
+    #     print("TURN CLOCKWISE")
+    #     explore(room, visited, HR.turn_clockwise())
+
+
+def is_position_discovered(position, room):
+    """
+    Check if the position is already discovered
+    :param room:
+    :param position:
+    :return: True if the position is already discovered
+    """
+    return room[N_ROW - 1 - position[1]][position[0]] != 0
+
+
+def count_max_new_cells_discovered(room, position, orientation):
+    """
+    Count the number of new cells discovered from a position and an orientation
+    :param room:
+    :param position:
+    :param orientation:
+    :return: the number of new cells discovered
+    """
+    count = 0
+    #Hitman can see 3 cells in front of him
+    for i in range(3):
+        if is_valid_position(move_forward(position, orientation), room):
+            position = move_forward(position, orientation)
+            if not is_position_discovered(position, room):
+                count += 1
+        else:
+            return count
+    return count
 
 def is_blocked(room, visited, position, orientation):
+    """
+    Check if the hitman is blocked (all the cells around him are walls, guards or visited)
+    :param room:
+    :param visited:
+    :param position:
+    :param orientation:
+    :return: True if the hitman is blocked
+    """
     # If all square arround are walls,guard or visited
     turn = turn_clockwise(orientation)
     if (
@@ -142,6 +221,12 @@ def is_blocked(room, visited, position, orientation):
 
 
 def is_valid_position(position, room):
+    """
+    Check if the position is within the room boundaries and not a wall or a guard
+    :param position:
+    :param room:
+    :return: True if the position is valid
+    """
     # Check if the position is within the room boundaries and not a wall
     i, j = position
     if (
@@ -155,7 +240,12 @@ def is_valid_position(position, room):
 
 
 def move_forward(position, orientation):
-    # Move one cell forward in the current orientation
+    """
+    Move one cell forward in the current orientation
+    :param position:
+    :param orientation:
+    :return: the new position
+    """
     i, j = position
     if orientation == HC.N:
         return (i, j + 1)
@@ -168,7 +258,11 @@ def move_forward(position, orientation):
 
 
 def turn_clockwise(orientation):
-    # Turn to the next orientation (clockwise)
+    """
+    Turn to the next orientation (clockwise)
+    :param orientation:
+    :return the new orientation
+    """
     if orientation == HC.N:
         return HC.E
     elif orientation == HC.E:
@@ -180,7 +274,11 @@ def turn_clockwise(orientation):
 
 
 def turn_anti_clockwise(orientation):
-    # Turn to the next orientation (anticlockwise)
+    """
+    Turn to the next orientation (anti-clockwise)
+    :param orientation:
+    :return the new orientation
+    """
     if orientation == HC.N:
         return HC.W
     elif orientation == HC.W:
