@@ -68,6 +68,43 @@ def analyse_status(status, room):
             )
             if HC(vision[1]) == HC.WALL:
                 BLOCKED_CELLS.add((int(vision[0][0]), int(vision[0][1])))
+
+    if status["is_in_guard_range"]:
+        clauses = []
+        top = move_forward(status["position"], HC.N)
+        if is_inside_room(top):
+            clauses.append(get_variable(HC.GUARD_S, top[0], top[1]))
+        left = move_forward(status["position"], HC.W)
+        if is_inside_room(left):
+            clauses.append(get_variable(HC.GUARD_E, left[0], left[1]))
+        right = move_forward(status["position"], HC.E)
+        if is_inside_room(right):
+            clauses.append(get_variable(HC.GUARD_W, right[0], right[1]))
+        bottom = move_forward(status["position"], HC.S)
+        if is_inside_room(bottom):
+            clauses.append(get_variable(HC.GUARD_N, bottom[0], bottom[1]))
+        CLAUSES.append(clauses)
+        pass
+    else:
+    # Il n'y a pas de garde dans les 4 cases autour de nous
+        top = move_forward(status["position"], HC.N)
+        if is_valid_position(top, room):
+            CLAUSES.append([-get_variable(HC.GUARD_S, top[0], top[1])])
+        left = move_forward(status["position"], HC.W)
+        if is_valid_position(left, room):
+            CLAUSES.append([-get_variable(HC.GUARD_E, left[0], left[1])])
+        right = move_forward(status["position"], HC.E)
+        if is_valid_position(right, room):
+            CLAUSES.append([-get_variable(HC.GUARD_W, right[0], right[1])])
+        bottom = move_forward(status["position"], HC.S)
+        if is_valid_position(bottom, room):
+            CLAUSES.append([-get_variable(HC.GUARD_N, bottom[0], bottom[1])])
+    if status["hear"] != 0:
+        # Il y a x gardes ou un invités dans une des 4 cases autour de nous
+        pass
+    else:
+        #Vérifier combien de garde ou de civils qui ne sont pas dans la zone d'écoute, si la soustraction est en dessous de 5 ajouter les clauses.
+        pass
     if DEBUG:
         #beautifull print of the array [][] room
         for i in range(N_ROW):
@@ -85,6 +122,7 @@ def explore(room, visited, status):
     visited.add(position)
     print("Visited: ", visited)
     #input 0 to exit the function
+    write_dimacs_files()
     choice = input("Enter 0 to exit the function: ")
     if choice == "0":
         print("EXIT")
@@ -145,14 +183,22 @@ def is_valid_position(position, room):
     # Check if the position is within the room boundaries and not a wall
     i, j = position
     if (
-            0 <= i < N_COL
-            and 0 <= j < N_ROW
+            is_inside_room(position)
             and room[N_ROW - 1 - j][i]
             not in [HC.WALL, HC.GUARD_E, HC.GUARD_N, HC.GUARD_S, HC.GUARD_W]
     ):
         return True
     return False
 
+def is_inside_room(position):
+    # Check if the position is within the room boundaries
+    i, j = position
+    if (
+            0 <= i < N_COL
+            and 0 <= j < N_ROW
+    ):
+        return True
+    return False
 
 def move_forward(position, orientation):
     # Move one cell forward in the current orientation
