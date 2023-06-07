@@ -1,5 +1,10 @@
+import itertools
+import json
 import os
 from pprint import pprint
+
+from sympy import to_cnf, symbols, Or
+
 from hitman.hitman import HC, HitmanReferee, complete_map_example
 from utils import OS
 import subprocess
@@ -7,8 +12,8 @@ import subprocess
 # globals
 N_ROW = 7
 N_COL = 7
-N_GUEST = None
-N_GUARD = None
+N_GUEST = 5
+N_GUARD = 5
 VARIABLES = dict()
 CLAUSES = list()
 OS_USER: OS = OS.none
@@ -25,6 +30,7 @@ def main():
 
     room, status = start_phase1()
     create_clauses()
+    analyse_status(status, room)
 
     start_exploring(room, status)
 
@@ -50,7 +56,6 @@ def start_phase1():
     N_GUEST = int(status["civil_count"])
     create_variables()
     room = [[0 for j in range(N_COL)] for i in range(N_ROW)]
-    analyse_status(status, room)
     return room, status
 
 
@@ -318,6 +323,83 @@ def create_clauses():
                                 [-get_variable(type, i, j), -get_variable(type, k, l)]
                             )
 
+    #Il y a exactement 2 guards test array 3*3
+    positions = []
+    for i in range(0, N_COL):
+        for j in range(0, N_ROW):
+            positions.append((i, j))
+
+    #get all values of dict
+    values = list(VARIABLES.values())
+    ls = symbols(" ".join([str(i) for i in values]))
+    combinations = list(itertools.combinations(positions, N_GUARD))
+    print(combinations)
+    number = 0
+    for comb in combinations:
+        print("Treatment of combination " + str(number) + " / " + str(len(combinations)))
+        number += 1
+        other = []
+        for i in positions:
+            if i not in comb:
+                other.append(i)
+        dnf = []
+        for i in comb:
+            clause = []
+            for type in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
+                clause.append(-get_variable(type, i[0], i[1]))
+            dnf.append(clause)
+        clause = []
+        for j in other:
+            for type in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
+                clause.append(-get_variable(type, j[0], j[1]))
+        dnf.append(clause)
+        dnf_string = ""
+        for clause in dnf:
+            if dnf_string != "":
+                dnf_string += " | "
+            dnf_string += "("
+            for i in clause:
+                if dnf_string[-1] != "(":
+                    dnf_string += " & "
+                if i < 0:
+                    dnf_string += "~ls[" + str(abs(i)-1) + "]"
+                else:
+                    dnf_string += "ls[" + str(i-1) + "]"
+            dnf_string += ")"
+        cnf = to_cnf(eval(dnf_string), simplify=False, force=True)
+        cnf = list(cnf.args)
+        for c in cnf:
+            clause = []
+            for i in c.args:
+                clause.append(int(str(i).replace("~", "-")))
+            CLAUSES.append(clause)
+
+    export_clauses_to_file()
+    write_dimacs_files()
+    exit(0)
+
+
+
+
+    #z = to_cnf(eval("(ls[0] & ls[1]) | (~ls[1] & ls[2])"))
+    #convert to a list of clauses, remove | and replace ~ by-
+    #z = list(z.args)
+    # clauses = []
+    # for i in z:
+    #     clause = []
+    #     for j in i.args:
+    #         clause.append(int(str(j).replace("~", "-")))
+    #     clauses.append(clause)
+    #
+    # print(clauses)
+
+
+
+
+
+
+
+
 
 def add_clauses_map_test():
     global CLAUSES
@@ -358,6 +440,24 @@ def check_current_directory():
     if os.getcwd() != os.path.dirname(os.path.realpath(__file__)):
         print("Please execute this script from the root directory")
         exit(1)
+
+
+def export_clauses_to_file():
+    check_current_directory()
+    nameFile = "clauses_" + str(N_COL) + "_" + str(N_ROW) + "_" + str(N_GUARD) + ".json"
+    with open(nameFile, "w") as f:
+        json.dump(CLAUSES, f)
+
+def import_clauses_from_file():
+    global CLAUSES
+    check_current_directory()
+    nameFile = "clauses_" + str(N_COL) + "_" + str(N_ROW) + "_" + str(N_GUARD) + ".json"
+    #if file exists
+    if os.path.isfile(nameFile):
+        with open(nameFile, "r") as f:
+            CLAUSES = json.load(f)
+            return True
+    return False
 
 
 if __name__ == "__main__":
