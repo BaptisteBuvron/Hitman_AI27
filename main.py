@@ -1,18 +1,19 @@
 import itertools
 import json
 import os
+import subprocess
 from pprint import pprint
+from typing import List
 
 from sympy import to_cnf, symbols, Or
 
 from hitman.hitman import HC, HitmanReferee, complete_map_example
 from utils import OS
-import subprocess
 
 # globals
 N_ROW = 7
 N_COL = 7
-N_GUEST = 5
+N_CIVIL = 5
 N_GUARD = 5
 VARIABLES = dict()
 CLAUSES = list()
@@ -48,12 +49,12 @@ def start_exploring(room, status):
 
 
 def start_phase1():
-    global HR, N_ROW, N_COL, N_GUARD, N_GUEST
+    global HR, N_ROW, N_COL, N_GUARD, N_CIVIL
     status = HR.start_phase1()
     N_ROW = int(status["m"])
     N_COL = int(status["n"])
     N_GUARD = int(status["guard_count"])
-    N_GUEST = int(status["civil_count"])
+    N_CIVIL = int(status["civil_count"])
     create_variables()
     room = [[0 for j in range(N_COL)] for i in range(N_ROW)]
     return room, status
@@ -91,7 +92,7 @@ def analyse_status(status, room):
         CLAUSES.append(clauses)
         pass
     else:
-    # Il n'y a pas de garde dans les 4 cases autour de nous
+        # Il n'y a pas de garde dans les 4 cases autour de nous
         top = move_forward(status["position"], HC.N)
         if is_valid_position(top, room):
             CLAUSES.append([-get_variable(HC.GUARD_S, top[0], top[1])])
@@ -108,14 +109,14 @@ def analyse_status(status, room):
         # Il y a x gardes ou un invités dans une des 4 cases autour de nous
         pass
     else:
-        #Vérifier combien de garde ou de civils qui ne sont pas dans la zone d'écoute, si la soustraction est en dessous de 5 ajouter les clauses.
+        # Vérifier combien de garde ou de civils qui ne sont pas dans la zone d'écoute, si la soustraction est en dessous de 5 ajouter les clauses.
         pass
     if DEBUG:
-        #beautifull print of the array [][] room
+        # beautifull print of the array [][] room
         for i in range(N_ROW):
             for j in range(N_COL):
                 longueur = 15
-                print(room[i][j], end=" "*(longueur-len(str(room[i][j]))))
+                print(room[i][j], end=" " * (longueur - len(str(room[i][j]))))
             print()
     pass
 
@@ -126,7 +127,7 @@ def explore(room, visited, status):
     orientation = HC(status["orientation"])
     visited.add(position)
     print("Visited: ", visited)
-    #input 0 to exit the function
+    # input 0 to exit the function
     write_dimacs_files()
     choice = input("Enter 0 to exit the function: ")
     if choice == "0":
@@ -144,10 +145,18 @@ def explore(room, visited, status):
             print("Blocked, TURN CLOCKWISE")
             explore(room, visited, HR.turn_clockwise())
 
-    if is_valid_position(move_forward(position, turn_anti_clockwise(orientation)), room) and move_forward(position, turn_anti_clockwise(orientation)) not in visited:
+    if (
+        is_valid_position(
+            move_forward(position, turn_anti_clockwise(orientation)), room
+        )
+        and move_forward(position, turn_anti_clockwise(orientation)) not in visited
+    ):
         print("TURN ANTI CLOCKWISE")
         explore(room, visited, HR.turn_anti_clockwise())
-    elif is_valid_position(move_forward(position, orientation), room) and move_forward(position, orientation) not in visited:
+    elif (
+        is_valid_position(move_forward(position, orientation), room)
+        and move_forward(position, orientation) not in visited
+    ):
         print("GO FORWARD")
         explore(room, visited, HR.move())
     else:
@@ -155,30 +164,29 @@ def explore(room, visited, status):
         explore(room, visited, HR.turn_clockwise())
 
 
-
 def is_blocked(room, visited, position, orientation):
     # If all square arround are walls,guard or visited
     turn = turn_clockwise(orientation)
     if (
-            is_valid_position(move_forward(position, orientation), room)
-            and move_forward(position, orientation) not in visited
+        is_valid_position(move_forward(position, orientation), room)
+        and move_forward(position, orientation) not in visited
     ):
         return False
     if (
-            is_valid_position(move_forward(position, turn), room)
-            and move_forward(position, turn) not in visited
+        is_valid_position(move_forward(position, turn), room)
+        and move_forward(position, turn) not in visited
     ):
         return False
     if (
-            is_valid_position(
-                move_forward(position, turn_anti_clockwise(orientation)), room
-            )
-            and move_forward(position, turn_anti_clockwise(orientation)) not in visited
+        is_valid_position(
+            move_forward(position, turn_anti_clockwise(orientation)), room
+        )
+        and move_forward(position, turn_anti_clockwise(orientation)) not in visited
     ):
         return False
     if (
-            is_valid_position(move_forward(position, turn_clockwise(turn)), room)
-            and move_forward(position, turn_clockwise(turn)) not in visited
+        is_valid_position(move_forward(position, turn_clockwise(turn)), room)
+        and move_forward(position, turn_clockwise(turn)) not in visited
     ):
         return False
     return True
@@ -187,23 +195,24 @@ def is_blocked(room, visited, position, orientation):
 def is_valid_position(position, room):
     # Check if the position is within the room boundaries and not a wall
     i, j = position
-    if (
-            is_inside_room(position)
-            and room[N_ROW - 1 - j][i]
-            not in [HC.WALL, HC.GUARD_E, HC.GUARD_N, HC.GUARD_S, HC.GUARD_W]
-    ):
+    if is_inside_room(position) and room[N_ROW - 1 - j][i] not in [
+        HC.WALL,
+        HC.GUARD_E,
+        HC.GUARD_N,
+        HC.GUARD_S,
+        HC.GUARD_W,
+    ]:
         return True
     return False
+
 
 def is_inside_room(position):
     # Check if the position is within the room boundaries
     i, j = position
-    if (
-            0 <= i < N_COL
-            and 0 <= j < N_ROW
-    ):
+    if 0 <= i < N_COL and 0 <= j < N_ROW:
         return True
     return False
+
 
 def move_forward(position, orientation):
     # Move one cell forward in the current orientation
@@ -323,20 +332,26 @@ def create_clauses():
                                 [-get_variable(type, i, j), -get_variable(type, k, l)]
                             )
 
-    #Il y a exactement 2 guards test array 3*3
+    write_dimacs_files()
+
+
+def create_clauses_max_type(types: List, max: int):
+    # Il y a exactement 2 guards test array 3*3
     positions = []
     for i in range(0, N_COL):
         for j in range(0, N_ROW):
             positions.append((i, j))
 
-    #get all values of dict
+    # get all values of dict
     values = list(VARIABLES.values())
     ls = symbols(" ".join([str(i) for i in values]))
-    combinations = list(itertools.combinations(positions, N_GUARD))
+    combinations = list(itertools.combinations(positions, max))
     print(combinations)
     number = 0
     for comb in combinations:
-        print("Treatment of combination " + str(number) + " / " + str(len(combinations)))
+        print(
+            "Treatment of combination " + str(number) + " / " + str(len(combinations))
+        )
         number += 1
         other = []
         for i in positions:
@@ -345,12 +360,12 @@ def create_clauses():
         dnf = []
         for i in comb:
             clause = []
-            for type in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
+            for type in types:
                 clause.append(-get_variable(type, i[0], i[1]))
             dnf.append(clause)
         clause = []
         for j in other:
-            for type in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
+            for type in types:
                 clause.append(-get_variable(type, j[0], j[1]))
         dnf.append(clause)
         dnf_string = ""
@@ -362,9 +377,9 @@ def create_clauses():
                 if dnf_string[-1] != "(":
                     dnf_string += " & "
                 if i < 0:
-                    dnf_string += "~ls[" + str(abs(i)-1) + "]"
+                    dnf_string += "~ls[" + str(abs(i) - 1) + "]"
                 else:
-                    dnf_string += "ls[" + str(i-1) + "]"
+                    dnf_string += "ls[" + str(i - 1) + "]"
             dnf_string += ")"
         cnf = to_cnf(eval(dnf_string), simplify=False, force=True)
         cnf = list(cnf.args)
@@ -374,37 +389,17 @@ def create_clauses():
                 clause.append(int(str(i).replace("~", "-")))
             CLAUSES.append(clause)
 
-    export_clauses_to_file()
-    write_dimacs_files()
-    exit(0)
-
-
-
-
-    #z = to_cnf(eval("(ls[0] & ls[1]) | (~ls[1] & ls[2])"))
-    #convert to a list of clauses, remove | and replace ~ by-
-    #z = list(z.args)
-    # clauses = []
-    # for i in z:
-    #     clause = []
-    #     for j in i.args:
-    #         clause.append(int(str(j).replace("~", "-")))
-    #     clauses.append(clause)
-    #
-    # print(clauses)
-
-
-
-
-
-
-
-
 
 def add_clauses_map_test():
     global CLAUSES
     for key in complete_map_example:
         CLAUSES.append([get_variable(HC.EMPTY, key[0], key[1])])
+
+
+def check_current_directory():
+    if os.getcwd() != os.path.dirname(os.path.realpath(__file__)):
+        print("Please execute this script from the root directory")
+        exit(1)
 
 
 def write_dimacs_files():
@@ -436,23 +431,38 @@ def execute_gophersat():
     print(result.stdout)
 
 
-def check_current_directory():
-    if os.getcwd() != os.path.dirname(os.path.realpath(__file__)):
-        print("Please execute this script from the root directory")
-        exit(1)
-
-
 def export_clauses_to_file():
     check_current_directory()
-    nameFile = "clauses_" + str(N_COL) + "_" + str(N_ROW) + "_" + str(N_GUARD) + ".json"
+    nameFile = (
+        "clauses/clauses_"
+        + str(N_COL)
+        + "_"
+        + str(N_ROW)
+        + "_"
+        + str(N_GUARD)
+        + "_"
+        + str(N_CIVIL)
+        + ".json"
+    )
     with open(nameFile, "w") as f:
         json.dump(CLAUSES, f)
+
 
 def import_clauses_from_file():
     global CLAUSES
     check_current_directory()
-    nameFile = "clauses_" + str(N_COL) + "_" + str(N_ROW) + "_" + str(N_GUARD) + ".json"
-    #if file exists
+    nameFile = (
+        "clauses/clauses_"
+        + str(N_COL)
+        + "_"
+        + str(N_ROW)
+        + "_"
+        + str(N_GUARD)
+        + "_"
+        + str(N_CIVIL)
+        + ".json"
+    )
+    # if file exists
     if os.path.isfile(nameFile):
         with open(nameFile, "r") as f:
             CLAUSES = json.load(f)
