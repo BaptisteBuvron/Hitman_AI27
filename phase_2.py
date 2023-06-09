@@ -1,4 +1,7 @@
 from hitman.hitman import HC, complete_map_example
+import math
+import heapq
+from itertools import count
 
 # globals
 N_ROW = 7
@@ -27,61 +30,42 @@ class Case:
         return (neighbors)
 
 
-def a_star(map, debut, but):
-    # initialisation des listes ouvertes et fermées
-    open_list = []
-    closed_list = []
+def a_star(map, start, goal):
+    i = 0
+    open_set = []  # Noeuds à explorer
+    closed_set = set()  # Noeuds déjà explorés
+    counter = count()
+    heapq.heappush(open_set, (start.f, next(counter), start))
+    while open_set:
+        current = heapq.heappop(open_set)[2]
 
-    # Commencer avec la case de depart
-    open_list.append(debut)
-
-    while len(open_list) > 0:
-        # Get the current node
-        current_node = open_list[0]
-        current_index = 0
-        for index, item in enumerate(open_list):
-            if item.f < current_node.f:
-                current_node = item
-                current_index = index
-        # Pop current off open list, add to closed list
-        open_list.pop(current_index)
-        closed_list.append(current_node)
-        # Found the goal
-        if current_node.coordonnees == but.coordonnees:
+        if current.coordonnees == goal.coordonnees:
+            # Retourner le chemin si nous avons atteint le nœud objectif
             path = []
-            current = current_node
-            while current is not None:
+            while current.parent:
                 path.append(current.coordonnees)
                 current = current.parent
-            return path[::-1]  # Return reversed path
-        # Generate children
-        children = current_node.get_neighbors(map)
+            path.append(start.coordonnees)
+            path.reverse()
+            return path
 
-        for child in children:
-            # Child is on the closed list
-            for closed_child in closed_list:
-                if child.coordonnees == closed_child.coordonnees:
-                    continue
-            # Create the f, g, and h values
-            child.g = current_node.g + 1
-            child.h = ((child.coordonnees[0] - but.coordonnees[0]) ** 2) + (
-                    (child.coordonnees[1] - but.coordonnees[1]) ** 2)
-            child.f = child.g + child.h
-            # Child is already in the open list
+        closed_set.add(current)
 
-            for open_node in open_list:
-                if child.coordonnees == open_node.coordonnees and child.g > open_node.g:
-                    continue
+        for neighbor in current.get_neighbors(map):
+            if neighbor in closed_set:
+                continue
 
-            # Add the child to the open list
-            open_list.append(child)
-
+            if neighbor not in open_set:
+                neighbor.parent = current
+                neighbor.g = current.g + 1
+                neighbor.h = neighbor.h + ((neighbor.coordonnees[0] - goal.coordonnees[0]) ** 2) + (
+                    (neighbor.coordonnees[1] - goal.coordonnees[1]) ** 2)
+                neighbor.f = neighbor.g + neighbor.h
+                heapq.heappush(open_set, (neighbor.f, next(counter), neighbor))
+    return None
 
 def function_phase_2():
-    # initialise une liste de type Case avec toutes les coordonnees présentes dans complete_map_example
-    cases = []
-    for key in complete_map_example.keys():
-        cases.append(Case(key))
+    
     # initialsie la case depart et les cases goal
     case_depart = Case((0, 0))
     for key, valeur in complete_map_example.items():

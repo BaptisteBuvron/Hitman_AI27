@@ -28,6 +28,7 @@ HR: HitmanReferee
 def main():
     global VARIABLES
     global HR
+
     HR = HitmanReferee()
 
     room, status = start_phase1()
