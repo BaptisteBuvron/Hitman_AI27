@@ -9,6 +9,7 @@ from sympy import to_cnf, symbols, Or
 
 from hitman.hitman import HC, HitmanReferee, complete_map_example
 from utils import OS
+from phase_2 import function_phase_2
 
 # globals
 N_ROW = 7
@@ -40,6 +41,8 @@ def main():
     write_dimacs_files()
     execute_gophersat()
 
+    # Start phase 2
+    function_phase_2()
 
 def start_exploring(room, status):
     visited = set()
