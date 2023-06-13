@@ -1,6 +1,7 @@
 from ClausesManager import ClausesManager
 from hitman.hitman import HC, HitmanReferee
 from movement import move_forward, turn_anti_clockwise, is_valid_position, is_blocked
+from phase_2 import function_phase_2
 
 # globals
 
