@@ -1,7 +1,7 @@
 __author__ = "Sylvain Lagrue, and Hénoïk Willot"
 __copyright__ = "Copyright 2023, Université de technologie de Compiègne"
 __license__ = "LGPL-3.0"
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 __maintainer__ = "Sylvain Lagrue"
 __email__ = "sylvain.lagrue@utc.fr"
 __status__ = "dev"
@@ -85,7 +85,7 @@ world_example = [
     [HC.TARGET, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.CIVIL_N, HC.EMPTY],
     [HC.WALL, HC.WALL, HC.EMPTY, HC.GUARD_E, HC.EMPTY, HC.CIVIL_E, HC.CIVIL_W],
     [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
-    [HC.EMPTY, HC.EMPTY, HC.WALL, HC.WALL, HC.EMPTY, HC.PIANO_WIRE, HC.EMPTY],
+    [HC.EMPTY, HC.GUARD_N, HC.WALL, HC.WALL, HC.EMPTY, HC.PIANO_WIRE, HC.EMPTY],
 ]
 
 complete_map_example = {
@@ -187,19 +187,23 @@ class HitmanReferee:
     def send_content(self, map_info: Dict[Tuple[int, int], HC]) -> bool:
         if not self.__has_guessed:
             self.__has_guessed = True
-            observed_tiles = []
+            guess_is_right = True
             for (x, y), content in map_info.items():
-                if x >= self.__n or y >= self.__m or x < 0 or y < 0:
-                    return False
-                if content != self.__get_world_content(x, y):
-                    return False
-                observed_tiles.append((x, y))
-                self.__phase1_guess_score += 2
+                if (
+                    x >= self.__n
+                    or y >= self.__m
+                    or x < 0
+                    or y < 0
+                    or content != self.__get_world_content(x, y)
+                ):
+                    guess_is_right = False
+                else:
+                    self.__phase1_guess_score += 2
             all_tiles = list(product(range(self.__n), range(self.__m)))
             unobserved_tiles = [
-                (x, y) for (x, y) in all_tiles if (x, y) not in observed_tiles
+                (x, y) for (x, y) in all_tiles if (x, y) not in map_info.keys()
             ]
-            return len(unobserved_tiles) == 0
+            return len(unobserved_tiles) == 0 and guess_is_right
         else:
             raise ValueError("Err: cand only send content once")
 
