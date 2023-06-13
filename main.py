@@ -24,6 +24,8 @@ def main():
     start_exploring(room, status)
 
 
+    # Start phase 2
+    function_phase_2()
 
 def start_exploring(room, status):
     visited = set()
