@@ -1,17 +1,17 @@
 from hitman.hitman import HC
 
 
-def move_forward(position, orientation):
+def move_forward(position, orientation, step = 1):
     # Move one cell forward in the current orientation
     i, j = position
     if orientation == HC.N:
-        return (i, j + 1)
+        return (i, j + step)
     elif orientation == HC.S:
-        return (i, j - 1)
+        return (i, j - step)
     elif orientation == HC.W:
-        return (i - 1, j)
+        return (i - step, j)
     elif orientation == HC.E:
-        return (i + 1, j)
+        return (i + step, j)
 
 
 def turn_clockwise(orientation):
@@ -37,6 +37,28 @@ def turn_anti_clockwise(orientation):
     elif orientation == HC.E:
         return HC.N
 
+
+def opposite_orientation_guard(orientation):
+    # Turn to the next orientation (anticlockwise)
+    if orientation == HC.N:
+        return HC.GUARD_S
+    elif orientation == HC.W:
+        return HC.GUARD_E
+    elif orientation == HC.S:
+        return HC.GUARD_N
+    elif orientation == HC.E:
+        return HC.GUARD_W
+    pass
+
+    # Turn to the next orientation (anticlockwise)
+    if orientation == HC.N:
+        return HC.S
+    elif orientation == HC.W:
+        return HC.E
+    elif orientation == HC.S:
+        return HC.N
+    elif orientation == HC.E:
+        return HC.W
 
 def is_blocked(room, visited, position, orientation, n_row, n_col):
     #TODO refactor n_row, n_col

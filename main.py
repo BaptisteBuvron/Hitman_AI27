@@ -26,7 +26,7 @@ def main():
 
 
     # Start phase 2
-    function_phase_2()
+    #function_phase_2()
 
 def start_exploring(room, status):
     visited = set()
@@ -72,6 +72,9 @@ def explore(room, visited, status):
     else:
         print("TURN CLOCKWISE")
         explore(room, visited, HR.turn_clockwise())
+
+
+
 
 
 if __name__ == "__main__":

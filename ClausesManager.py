@@ -9,7 +9,7 @@ from typing import List
 from sympy import symbols, to_cnf
 
 from hitman.hitman import HC
-from movement import move_forward, is_valid_position, is_inside_room
+from movement import move_forward, is_inside_room, opposite_orientation_guard
 from utils import OS
 
 
@@ -191,34 +191,20 @@ class ClausesManager:
 
         if status["is_in_guard_range"]:
             clauses = []
-            top = move_forward(status["position"], HC.N)
-            if is_inside_room(top, self.N_ROW, self.N_COL):
-                clauses.append(self.get_variable(HC.GUARD_S, top[0], top[1]))
-            left = move_forward(status["position"], HC.W)
-            if is_inside_room(left, self.N_ROW, self.N_COL):
-                clauses.append(self.get_variable(HC.GUARD_E, left[0], left[1]))
-            right = move_forward(status["position"], HC.E)
-            if is_inside_room(right, self.N_ROW, self.N_COL):
-                clauses.append(self.get_variable(HC.GUARD_W, right[0], right[1]))
-            bottom = move_forward(status["position"], HC.S)
-            if is_inside_room(bottom, self.N_ROW, self.N_COL):
-                clauses.append(self.get_variable(HC.GUARD_N, bottom[0], bottom[1]))
+            for orientation in [HC.N, HC.S, HC.E, HC.W]:
+                for step in range(1, 3):
+                    pos = move_forward(status["position"], orientation, step)
+                    if is_inside_room(pos, self.N_ROW, self.N_COL):
+                        clauses.append(self.get_variable(opposite_orientation_guard(orientation), pos[0], pos[1]))
             self.clauses.append(clauses)
             self.deduct(room)
         else:
-            # Il n'y a pas de garde dans les 4 cases autour de nous
-            top = move_forward(status["position"], HC.N)
-            if is_valid_position(top, room, self.N_ROW, self.N_COL):
-                self.clauses.append([-self.get_variable(HC.GUARD_S, top[0], top[1])])
-            left = move_forward(status["position"], HC.W)
-            if is_valid_position(left, room, self.N_ROW, self.N_COL):
-                self.clauses.append([-self.get_variable(HC.GUARD_E, left[0], left[1])])
-            right = move_forward(status["position"], HC.E)
-            if is_valid_position(right, room, self.N_ROW, self.N_COL):
-                self.clauses.append([-self.get_variable(HC.GUARD_W, right[0], right[1])])
-            bottom = move_forward(status["position"], HC.S)
-            if is_valid_position(bottom, room, self.N_ROW, self.N_COL):
-                self.clauses.append([-self.get_variable(HC.GUARD_N, bottom[0], bottom[1])])
+            for orientation in [HC.N, HC.S, HC.E, HC.W]:
+                for step in range(1, 3):
+                    pos = move_forward(status["position"], orientation, step)
+                    if is_inside_room(pos, self.N_ROW, self.N_COL):
+                        self.clauses.append([-self.get_variable(opposite_orientation_guard(orientation), pos[0], pos[1])])
+
         if status["hear"] != 0:
             if status["position"] not in self.visited:
                 # Il y a x gardes ou un invités dans une des 2 cases autour de nous
@@ -303,13 +289,13 @@ class ClausesManager:
         for i in range(0, self.N_COL):
             for j in range(0, self.N_ROW):
                 if room[self.N_ROW - 1 - j][i] == 0:
-                    for type in HC:
-                        if type not in [HC.N, HC.S, HC.E, HC.W]:
+                    for type in self.all_types:
                             clauses_temp = copy(self.clauses)
                             clauses_temp.append([-self.get_variable(type, i, j)])
                             self.write_dimacs_files(clauses_temp)
                             if not self.execute_gophersat():
                                 print("Found a solution : " + str(type) + " at " + str(i) + " " + str(j))
-                                room[self.N_ROW - 1 - j][i] = type
-                                self.clauses.append([self.get_variable(type, i, j)])
+                                if type not in [Type.GUARD, Type.CIVIL]:
+                                    room[self.N_ROW - 1 - j][i] = type
+                                    self.clauses.append([self.get_variable(type, i, j)])
         print("End deduction")
