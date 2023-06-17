@@ -135,7 +135,7 @@ def get_actions_adjacents(current, adjacent_position, actions):
 
 def get_adjacent_positions(position, room, n_row, n_col):
     st=[]
-    orientation_temp = HC.W
+    orientation_temp = HC.N
     for i in range(4):
         neightboard = is_valid_position(move_forward(position, orientation_temp), room, n_row, n_col)
         if neightboard:

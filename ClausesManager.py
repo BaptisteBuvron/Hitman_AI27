@@ -228,7 +228,6 @@ class ClausesManager:
                 longueur = 15
                 print(room[i][j], end=" " * (longueur - len(str(room[i][j]))))
             print()
-
         pass
 
     def write_dimacs_files(self, clauses):
