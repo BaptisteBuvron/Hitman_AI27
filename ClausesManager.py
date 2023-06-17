@@ -199,7 +199,7 @@ class ClausesManager:
                     if is_inside_room(pos, self.N_ROW, self.N_COL):
                         clauses.append(self.get_variable(opposite_orientation_guard(orientation), pos[0], pos[1]))
             self.clauses.append(clauses)
-            self.deduct(room)
+            #self.deduct(room)
         else:
             for orientation in [HC.N, HC.S, HC.E, HC.W]:
                 for step in range(1, 3):
@@ -217,9 +217,8 @@ class ClausesManager:
                                                                                                HC.TARGET,
                                                                                                HC.PIANO_WIRE, HC.SUIT]]
 
-                self.create_clauses_max_type(positions,
-                                             [Type.GUARD, Type.CIVIL], status["hear"])
-                self.visited.add(status["position"])
+                #self.create_clauses_max_type(positions,[Type.GUARD, Type.CIVIL], status["hear"])
+                #self.visited.add(status["position"])
                 pass
         else:
             # Vérifier combien de garde ou de civils qui ne sont pas dans la zone d'écoute, si la soustraction est en dessous de 5 ajouter les clauses.

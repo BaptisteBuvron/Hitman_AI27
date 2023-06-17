@@ -1,3 +1,5 @@
+from typing import List
+
 from hitman.hitman import HC
 
 
@@ -110,3 +112,95 @@ def is_inside_room(position, n_row, n_col):
         return True
     return False
 
+def positions_are_adjacent(position1, position2):
+    # Check if the two positions are adjacent
+    i1, j1 = position1
+    i2, j2 = position2
+    if abs(i1 - i2) + abs(j1 - j2) == 1:
+        return True
+    return False
+
+def get_actions_adjacents(current, adjacent_position, actions):
+    # Get the actions to go from the current position to the adjacent positions
+    while current != adjacent_position:
+        if current[1] == adjacent_position[1]:
+            if current[1] < adjacent_position[1]:
+                actions.append(HC.MOVE_FORWARD)
+                current = (current[0], current[1] + 1)
+            else:
+                actions.append(HC.TURN_CLOCKWISE)
+                current = turn_clockwise(current)
+
+    return actions
+
+def get_adjacent_positions(position, room, n_row, n_col):
+    st=[]
+    orientation_temp = HC.W
+    for i in range(4):
+        neightboard = is_valid_position(move_forward(position, orientation_temp), room, n_row, n_col)
+        if neightboard:
+            st.append(move_forward(position, orientation_temp))
+        orientation_temp = turn_clockwise(orientation_temp)
+    return st
+
+def get_actions_moves(position, goal, orientation):
+    actions = []
+    dy = goal[1] - position[1]
+    dx = goal[0] - position[0]
+
+    if dy > 0:
+        if orientation == HC.N:
+            actions.append("move")
+        elif orientation == HC.E:
+            actions.append("turn_anti_clockwise")
+            actions.append("move")
+        elif orientation == HC.S:
+            actions.append("turn_clockwise")
+            actions.append("turn_clockwise")
+            actions.append("move")
+        elif orientation == HC.W:
+            actions.append("turn_clockwise")
+            actions.append("move")
+
+    elif dy < 0:
+        if orientation == HC.N:
+            actions.append("turn_clockwise")
+            actions.append("turn_clockwise")
+            actions.append("move")
+        elif orientation == HC.E:
+            actions.append("turn_clockwise")
+            actions.append("move")
+        elif orientation == HC.S:
+            actions.append("move")
+        elif orientation == HC.W:
+            actions.append("turn_anti_clockwise")
+            actions.append("move")
+
+    if dx > 0:
+        if orientation == HC.N:
+            actions.append("turn_clockwise")
+            actions.append("move")
+        elif orientation == HC.E:
+            actions.append("move")
+        elif orientation == HC.S:
+            actions.append("turn_anti_clockwise")
+            actions.append("move")
+        elif orientation == HC.W:
+            actions.append("turn_clockwise")
+            actions.append("turn_clockwise")
+            actions.append("move")
+    elif dx < 0:
+        if orientation == HC.N:
+            actions.append("turn_anti_clockwise")
+            actions.append("move")
+        elif orientation == HC.E:
+            actions.append("turn_clockwise")
+            actions.append("turn_clockwise")
+            actions.append("move")
+        elif orientation == HC.S:
+            actions.append("turn_clockwise")
+            actions.append("move")
+        elif orientation == HC.W:
+            actions.append("move")
+
+    return actions
