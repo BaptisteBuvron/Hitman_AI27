@@ -132,6 +132,8 @@ class ClausesManager:
         values = list(self.variables.values())
         ls = symbols(" ".join([str(i) for i in values]))
         combinations = list(itertools.combinations(positions, max))
+        if len(combinations) <= 1:
+            return
         number = 0
         for comb in combinations:
             print(
@@ -214,6 +216,7 @@ class ClausesManager:
                              room[self.N_ROW - 1 - int(position[1])][int(position[0])] not in [HC.WALL, HC.EMPTY,
                                                                                                HC.TARGET,
                                                                                                HC.PIANO_WIRE, HC.SUIT]]
+
                 self.create_clauses_max_type(positions,
                                              [Type.GUARD, Type.CIVIL], status["hear"])
                 self.visited.add(status["position"])
