@@ -90,8 +90,9 @@ def explore(room, visited, status):
     orientation = HC(status["orientation"])
     visited.add(position)
     print("Visited: ", visited)
-    input("Press Enter to continue...")
     # CHOOSE an ORIENTATION (turn_clockwise, turn_anti_clockwise) or GO FORWARD
+    if is_discovered(room):
+        return
     if is_blocked(room, visited, position, orientation):
         print("BLOCKED")
         if is_valid_position(move_forward(position, orientation), room):
@@ -154,6 +155,18 @@ def explore(room, visited, status):
     #     print("TURN CLOCKWISE")
     #     explore(room, visited, HR.turn_clockwise())
 
+
+def is_discovered(room) -> bool:
+    """
+    Check if all the cells are discovered
+    :param room:
+    :return: True if all the cells are discovered
+    """
+    for row in room:
+        for cell in row:
+            if cell == 0:
+                return False
+    return True
 
 def is_position_discovered(position, room):
     """
