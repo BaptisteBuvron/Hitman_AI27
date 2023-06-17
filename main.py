@@ -25,11 +25,6 @@ def main():
     ClausesManager = ClausesManager(status["m"], status["n"], status["guard_count"], status["civil_count"])
     ClausesManager.analyse_status(status, room)
 
-    position1 = (0, 0)
-    position2 = (0, 1)
-    print(positions_are_adjacent(position1, position2))
-    print(get_actions_moves(position1, position2, HC.S))
-
     start_exploring(room, status)
 
     # Start phase 2
@@ -37,7 +32,6 @@ def main():
 
 
 def start_exploring(room, status):
-    visited = set()
     # TODO change move
     explore_dfs(room, status)
     return room
@@ -103,8 +97,6 @@ def explore_dfs(room, status):
         cur = st.pop()
         visited.add(cur)
         # ADD predecessor
-
-
         if position != cur:
             if positions_are_adjacent(position, cur):
                 actions = get_actions_moves(position, cur, orientation)
@@ -132,7 +124,7 @@ def explore_dfs(room, status):
                     print("position", position)
                     print("st", st)
             else:
-                while cur != position:
+                while cur != position and not is_discovered(room):
                     is_adjacent = False
                     if positions_are_adjacent(position, cur):
                         actions = get_actions_moves(position, cur, orientation)
@@ -176,6 +168,7 @@ def explore_dfs(room, status):
         print("Visited: ", visited)
         print("Stack: ", st)
         print("Movements: ", movements)
+        #input("Press Enter to continue...")
 
 
 def explore_(room, visited, status):

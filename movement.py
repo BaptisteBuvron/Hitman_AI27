@@ -133,9 +133,9 @@ def get_actions_adjacents(current, adjacent_position, actions):
 
     return actions
 
-def get_adjacent_positions(position, room, n_row, n_col):
+def get_adjacent_positions(position, room, n_row, n_col, orientation = HC.N):
     st=[]
-    orientation_temp = HC.N
+    orientation_temp = orientation
     for i in range(4):
         neightboard = is_valid_position(move_forward(position, orientation_temp), room, n_row, n_col)
         if neightboard:
@@ -204,3 +204,13 @@ def get_actions_moves(position, goal, orientation):
             actions.append("move")
 
     return actions
+
+def guard_orientation_to_orientation(orientation):
+    if orientation == HC.GUARD_N:
+        return HC.N
+    elif orientation == HC.GUARD_E:
+        return HC.E
+    elif orientation == HC.GUARD_S:
+        return HC.S
+    elif orientation == HC.GUARD_W:
+        return HC.W
