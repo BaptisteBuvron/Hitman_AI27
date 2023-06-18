@@ -3,7 +3,7 @@ from typing import NamedTuple
 from ClausesManager import ClausesManager
 from hitman.hitman import HC, HitmanReferee
 from movement import move_forward, turn_anti_clockwise, is_valid_position, is_blocked, turn_clockwise, \
-    positions_are_adjacent, get_actions_moves, get_adjacent_positions
+    positions_are_adjacent, get_actions_moves, get_adjacent_positions, get_successor_score
 from phase_2 import function_phase_2
 
 # globals
@@ -93,8 +93,6 @@ def explore_dfs(room, status):
     visited = set()
     print("dfs")
 
-
-
     while len(st) > 0 and not is_discovered(room):
         cur = st.pop()
         visited.add(cur)
@@ -128,6 +126,7 @@ def explore_dfs(room, status):
             else:
                 while cur != position and not is_discovered(room):
                     is_adjacent = False
+                    # On est retourné en arrière jusqu'a que le but soit une case adjacente
                     if positions_are_adjacent(position, cur):
                         actions = get_actions_moves(position, cur, orientation)
                         is_adjacent = True
@@ -163,31 +162,50 @@ def explore_dfs(room, status):
         else:
             neighbors = get_adjacent_positions(cur, room, N_ROW, N_COL)
         successors_score = []
+        print("neighbors", neighbors)
         for successor in neighbors:
-            if successor not in visited:
-                if room[N_ROW - 1 - int(successor[1])][int(successor[0])] in [HC.EMPTY, HC.TARGET, HC.SUIT, HC.PIANO_WIRE]:
-                    successors_score.append((successor, 1))
-                elif room[N_ROW - 1 - int(successor[1])][int(successor[0])] in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E,
-                                                                            HC.CIVIL_W]:
-                    successors_score.append((successor, 2))
-                elif successor in ClausesManager.guarded_positions:
-                    successors_score.append((successor, -5))
-                elif room[N_ROW - 1 - int(successor[1])][int(successor[0])] not in [HC.WALL, HC.GUARD_N, HC.GUARD_S,                                                              HC.GUARD_E, HC.GUARD_W]:
-                    successors_score.append((successor, 5))
-        #get max successor
+            if is_valid_position(successor, room, N_ROW, N_COL) and successor not in visited:
+                successors_score.append((successor, get_successor_score(successor, room, N_ROW, ClausesManager)))
+        print("successors_score", successors_score)
+        # get max successor
 
         successors_score.sort(key=lambda x: x[1], reverse=True)
+        print("successors_score", successors_score)
+        # On retourne en arrière jusqu'a trouver un noeud avec des successeurs non visités
+
+        while len(successors_score) < 1:
+            print("NO SUCCESSORS: GO BACK")
+            actions = get_actions_moves(position, movements.pop(), orientation)
+            for action in actions:
+                print(action)
+                if action == "turn_anti_clockwise":
+                    status = HR.turn_anti_clockwise()
+                    ClausesManager.analyse_status(status, room)
+                    orientation = HC(status["orientation"])
+                elif action == "turn_clockwise":
+                    status = HR.turn_clockwise()
+                    ClausesManager.analyse_status(status, room)
+                    orientation = HC(status["orientation"])
+                elif action == "move":
+                    if is_valid_position(move_forward(position, orientation), room, N_ROW, N_COL):
+                        status = HR.move()
+                        ClausesManager.analyse_status(status, room)
+                    else:
+                        visited.add(cur)
+                position = status["position"]
+            neighbors = get_adjacent_positions(position, room, N_ROW, N_COL)
+            for successor in neighbors:
+                if is_valid_position(successor, room, N_ROW, N_COL) and successor not in visited:
+                    successors_score.append(
+                        (successor, get_successor_score(successor, room, N_ROW, ClausesManager)))
         successor_max = successors_score[0]
         st.append(successor_max[0])
 
-
-
-
-        # logs
-        print("Visited: ", visited)
-        print("Stack: ", st)
-        print("Movements: ", movements)
-        #input("Press Enter to continue...")
+    # logs
+    print("Visited: ", visited)
+    print("Stack: ", st)
+    print("Movements: ", movements)
+# input("Press Enter to continue...")
 
 
 def explore_(room, visited, status):

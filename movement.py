@@ -214,3 +214,15 @@ def guard_orientation_to_orientation(orientation):
         return HC.S
     elif orientation == HC.GUARD_W:
         return HC.W
+
+def get_successor_score(successor, room, N_ROW, ClausesManager):
+    if room[N_ROW - 1 - int(successor[1])][int(successor[0])] in [HC.EMPTY, HC.TARGET, HC.SUIT, HC.PIANO_WIRE]:
+        return 1
+    elif room[N_ROW - 1 - int(successor[1])][int(successor[0])] in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E,
+                                                                    HC.CIVIL_W]:
+        return 2
+    elif successor in ClausesManager.guarded_positions:
+        return -5
+    elif room[N_ROW - 1 - int(successor[1])][int(successor[0])] not in [HC.WALL, HC.GUARD_N, HC.GUARD_S, HC.GUARD_E,
+                                                                        HC.GUARD_W]:
+        return 5
