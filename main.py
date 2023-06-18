@@ -35,6 +35,7 @@ def main():
 
 def start_exploring(room, status):
     # TODO change move
+    #explore(room, set(), status)
     explore_dfs(room, status)
     return room
 
