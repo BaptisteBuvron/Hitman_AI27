@@ -27,7 +27,7 @@ def main():
     ClausesManager = ClausesManager(status["m"], status["n"], status["guard_count"], status["civil_count"])
     ClausesManager.analyse_status(status, room)
 
-    start_exploring(room, status)
+    correct_map = start_exploring(room, status)
 
     # Start phase 2
     # function_phase_2()
@@ -35,10 +35,22 @@ def main():
 
 def start_exploring(room, status):
     # TODO change move
-    #explore(room, set(), status)
+    # explore(room, set(), status)
     explore_dfs(room, status)
+    # transform room to map_info: Dict[Tuple[int, int], List[HC]]
+    map_info = {}
+    for i in range(len(room[0])):
+        for j in range(len(room)):
+            map_info[(i, j)] = room[N_ROW - 1 - j][i]
+    # End phase 1
+    print(HR.send_content(map_info))
+    success, score, history, correct_map = HR.end_phase1()
+    print("Success: ", success)
+    print("Score: ", score)
+    print("Correct map: ", correct_map)
+
     ClausesManager.write_dimacs_files(ClausesManager.clauses)
-    return room
+    return correct_map
 
 
 def explore(room, visited, status):
@@ -82,6 +94,7 @@ def explore(room, visited, status):
         print("TURN CLOCKWISE")
         explore(room, visited, HR.turn_clockwise())
 
+
 def explore_dfs_v1(room, status):
     global ClausesManager
     if is_discovered(room):
@@ -93,8 +106,6 @@ def explore_dfs_v1(room, status):
     movements = []
     visited = set()
     print("dfs")
-
-
 
     while len(st) > 0 and not is_discovered(room):
         cur = st.pop()
@@ -171,7 +182,8 @@ def explore_dfs_v1(room, status):
         print("Visited: ", visited)
         print("Stack: ", st)
         print("Movements: ", movements)
-        #input("Press Enter to continue...")
+        # input("Press Enter to continue...")
+
 
 def explore_dfs(room, status):
     global ClausesManager
@@ -191,7 +203,7 @@ def explore_dfs(room, status):
         if status["is_in_guard_range"]:
             print("GUARDED", ClausesManager.guarded_positions)
             print("cur: ", cur)
-            #input("Press Enter to continue...")
+            # input("Press Enter to continue...")
         # ADD predecessor
         if position != cur:
             if positions_are_adjacent(position, cur):
@@ -262,7 +274,8 @@ def explore_dfs(room, status):
         print("guarded", ClausesManager.guarded_positions)
         for successor in neighbors:
             if is_valid_position(successor, room) and successor not in visited:
-                successors_score.append((successor, get_successor_score(successor, room, ClausesManager, get_orientation_case(position, successor))))
+                successors_score.append((successor, get_successor_score(successor, room, ClausesManager,
+                                                                        get_orientation_case(position, successor))))
         print("successors_score", successors_score)
         # get max successor
 
@@ -294,7 +307,8 @@ def explore_dfs(room, status):
             for successor in neighbors:
                 if is_valid_position(successor, room) and successor not in visited:
                     successors_score.append(
-                        (successor, get_successor_score(successor, room, ClausesManager, get_orientation_case(position, successor))))
+                        (successor, get_successor_score(successor, room, ClausesManager,
+                                                        get_orientation_case(position, successor))))
         if is_discovered(room):
             break
         successor_max = successors_score[0]
@@ -305,7 +319,9 @@ def explore_dfs(room, status):
         print("Stack: ", st)
         print("Movements: ", movements)
         print("successors_score", successors_score)
-        #input()
+        # input()
+
+
 # input("Press Enter to continue...")
 
 

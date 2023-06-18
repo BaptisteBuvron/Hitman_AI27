@@ -138,7 +138,7 @@ def get_actions_adjacents(current, adjacent_position, actions):
     return actions
 
 
-def get_adjacent_positions(position, room, orientation=HC.N):
+def get_adjacent_positions(position, room, orientation=HC.S):
     st = []
     orientation_temp = orientation
     for i in range(4):
@@ -238,8 +238,6 @@ def get_successor_score(successor, room, ClausesManager, orientation):
     elif room[n_row - 1 - int(successor[1])][int(successor[0])] not in [HC.WALL, HC.GUARD_N, HC.GUARD_S, HC.GUARD_E,
                                                                         HC.GUARD_W]:
         return 5
-
-
 
 
 def count_max_new_cells_discovered(room, position, orientation):
