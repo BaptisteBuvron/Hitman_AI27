@@ -197,11 +197,12 @@ class ClausesManager:
                     if HC(vision[1]) == type:
                         for i in range(1,3):
                             position_guarded = move_forward(vision[0], guard_orientation_to_orientation(type), i)
-                            if is_inside_room(position_guarded, self.N_ROW, self.N_COL):
+                            if is_inside_room(position_guarded, self.N_ROW, self.N_COL) and room[self.N_ROW - 1 - int(position_guarded[1])][int(position_guarded[0])] not in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
                                 self.guarded_positions.append(position_guarded)
 
         if status["is_in_guard_range"]:
             clauses = []
+            self.guarded_positions.append(status["position"])
             for orientation in [HC.N, HC.S, HC.E, HC.W]:
                 for step in range(1, 3):
                     pos = move_forward(status["position"], orientation, step)
@@ -213,9 +214,9 @@ class ClausesManager:
             for orientation in [HC.N, HC.S, HC.E, HC.W]:
                 pos = move_forward(status["position"], orientation, 1)
                 if is_inside_room(pos, self.N_ROW, self.N_COL):
-                    pass
-                   # self.clauses.append(
+                    #self.clauses.append(
                      #       [-self.get_variable(opposite_orientation_guard(orientation), pos[0], pos[1])])
+                    pass
 
         if status["hear"] != 0:
             if status["position"] not in self.visited:
@@ -228,7 +229,7 @@ class ClausesManager:
                                                                                                HC.PIANO_WIRE, HC.SUIT]]
 
                 #self.create_clauses_max_type(positions,[Type.GUARD, Type.CIVIL], status["hear"])
-                #self.visited.add(status["position"])
+                self.visited.add(status["position"])
                 pass
         else:
             # Vérifier combien de garde ou de civils qui ne sont pas dans la zone d'écoute, si la soustraction est en dessous de 5 ajouter les clauses.

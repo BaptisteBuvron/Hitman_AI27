@@ -154,7 +154,7 @@ small_map_example = [
     [HC.EMPTY, HC.EMPTY, HC.EMPTY],
 ]
 
-world_example = default_world
+world_example = big_map_example
 
 complete_map_example = {
     (0, 5): HC.EMPTY,
