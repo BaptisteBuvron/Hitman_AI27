@@ -80,6 +80,96 @@ def explore(room, visited, status):
         print("TURN CLOCKWISE")
         explore(room, visited, HR.turn_clockwise())
 
+def explore_dfs_v1(room, status):
+    global ClausesManager
+    if is_discovered(room):
+        print("DISCOVERED")
+        return
+    position = status["position"]
+    orientation = HC(status["orientation"])
+    st = [position]
+    movements = []
+    visited = set()
+    print("dfs")
+
+
+
+    while len(st) > 0 and not is_discovered(room):
+        cur = st.pop()
+        visited.add(cur)
+        # ADD predecessor
+        if position != cur:
+            if positions_are_adjacent(position, cur):
+                actions = get_actions_moves(position, cur, orientation)
+                for action in actions:
+                    print(action)
+                    if action == "turn_anti_clockwise":
+                        status = HR.turn_anti_clockwise()
+                        ClausesManager.analyse_status(status, room)
+                        orientation = HC(status["orientation"])
+                    elif action == "turn_clockwise":
+                        print("turn_clockwise")
+                        status = HR.turn_clockwise()
+                        ClausesManager.analyse_status(status, room)
+                        orientation = HC(status["orientation"])
+                    elif action == "move":
+                        if is_valid_position(move_forward(position, orientation), room, N_ROW, N_COL):
+                            movements.append(position)
+                            status = HR.move()
+                            ClausesManager.analyse_status(status, room)
+                            neighbors = get_adjacent_positions(cur, room, N_ROW, N_COL)
+                        else:
+                            print("Blocked...")
+                    position = status["position"]
+                    print("cur: ", cur)
+                    print("position", position)
+                    print("st", st)
+            else:
+                while cur != position and not is_discovered(room):
+                    is_adjacent = False
+                    if positions_are_adjacent(position, cur):
+                        actions = get_actions_moves(position, cur, orientation)
+                        is_adjacent = True
+                    else:
+                        movement = movements.pop()
+                        print("movement", movement)
+                        actions = get_actions_moves(position, movement, orientation)
+                    print("GO BACK")
+                    print("cur: ", cur)
+                    print("position", position)
+                    print("movements", movements)
+                    for action in actions:
+                        print(action)
+                        if action == "turn_anti_clockwise":
+                            status = HR.turn_anti_clockwise()
+                            ClausesManager.analyse_status(status, room)
+                            orientation = HC(status["orientation"])
+                        elif action == "turn_clockwise":
+                            status = HR.turn_clockwise()
+                            ClausesManager.analyse_status(status, room)
+                            orientation = HC(status["orientation"])
+                        elif action == "move":
+                            if is_valid_position(move_forward(position, orientation), room, N_ROW, N_COL):
+                                if is_adjacent:
+                                    neighbors = get_adjacent_positions(cur, room, N_ROW, N_COL)
+                                    movements.append(position)
+                                status = HR.move()
+                                ClausesManager.analyse_status(status, room)
+                            else:
+                                visited.add(cur)
+                                cur = st.pop()
+                        position = status["position"]
+        else:
+            neighbors = get_adjacent_positions(cur, room, N_ROW, N_COL)
+        for neighbor in neighbors:
+            if neighbor not in visited:
+                st.append(neighbor)
+
+        # logs
+        print("Visited: ", visited)
+        print("Stack: ", st)
+        print("Movements: ", movements)
+        #input("Press Enter to continue...")
 
 def explore_dfs(room, status):
     global ClausesManager
@@ -96,6 +186,9 @@ def explore_dfs(room, status):
     while len(st) > 0 and not is_discovered(room):
         cur = st.pop()
         visited.add(cur)
+        if cur in ClausesManager.guarded_positions:
+            print("GUARDED", ClausesManager.guarded_positions)
+            print("cur: ", cur)
         # ADD predecessor
         if position != cur:
             if positions_are_adjacent(position, cur):
@@ -163,6 +256,7 @@ def explore_dfs(room, status):
             neighbors = get_adjacent_positions(cur, room, N_ROW, N_COL)
         successors_score = []
         print("neighbors", neighbors)
+        print("guarded", ClausesManager.guarded_positions)
         for successor in neighbors:
             if is_valid_position(successor, room, N_ROW, N_COL) and successor not in visited:
                 successors_score.append((successor, get_successor_score(successor, room, N_ROW, ClausesManager)))
@@ -173,7 +267,7 @@ def explore_dfs(room, status):
         print("successors_score", successors_score)
         # On retourne en arrière jusqu'a trouver un noeud avec des successeurs non visités
 
-        while len(successors_score) < 1:
+        while len(successors_score) < 1 and not is_discovered(room):
             print("NO SUCCESSORS: GO BACK")
             actions = get_actions_moves(position, movements.pop(), orientation)
             for action in actions:
@@ -198,6 +292,8 @@ def explore_dfs(room, status):
                 if is_valid_position(successor, room, N_ROW, N_COL) and successor not in visited:
                     successors_score.append(
                         (successor, get_successor_score(successor, room, N_ROW, ClausesManager)))
+        if is_discovered(room):
+            break
         successor_max = successors_score[0]
         st.append(successor_max[0])
 
