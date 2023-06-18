@@ -35,7 +35,7 @@ def main():
 
 def start_exploring(room, status):
     # TODO change move
-    # explore(room, set(), status)
+    #explore(room, set(), status)
     explore_dfs(room, status)
     # transform room to map_info: Dict[Tuple[int, int], List[HC]]
     map_info = {}
@@ -69,7 +69,7 @@ def explore(room, visited, status):
 
     if is_blocked(room, visited, position, orientation, N_ROW, N_COL):
         print("BLOCKED")
-        if is_valid_position(move_forward(position, orientation), room, N_ROW, N_COL):
+        if is_valid_position(move_forward(position, orientation), room):
             print("Blocked, GO FORWARD")
             explore(room, visited, HR.move())
         else:
@@ -78,14 +78,14 @@ def explore(room, visited, status):
 
     if (
             is_valid_position(
-                move_forward(position, turn_anti_clockwise(orientation)), room, N_ROW, N_COL
+                move_forward(position, turn_anti_clockwise(orientation)), room
             )
             and move_forward(position, turn_anti_clockwise(orientation)) not in visited
     ):
         print("TURN ANTI CLOCKWISE")
         explore(room, visited, HR.turn_anti_clockwise())
     elif (
-            is_valid_position(move_forward(position, orientation), room, N_ROW, N_COL)
+            is_valid_position(move_forward(position, orientation), room)
             and move_forward(position, orientation) not in visited
     ):
         print("GO FORWARD")
@@ -126,11 +126,11 @@ def explore_dfs_v1(room, status):
                         ClausesManager.analyse_status(status, room)
                         orientation = HC(status["orientation"])
                     elif action == "move":
-                        if is_valid_position(move_forward(position, orientation), room, N_ROW, N_COL):
+                        if is_valid_position(move_forward(position, orientation), room):
                             movements.append(position)
                             status = HR.move()
                             ClausesManager.analyse_status(status, room)
-                            neighbors = get_adjacent_positions(cur, room, N_ROW, N_COL)
+                            neighbors = get_adjacent_positions(cur, room)
                         else:
                             print("Blocked...")
                     position = status["position"]
@@ -162,9 +162,9 @@ def explore_dfs_v1(room, status):
                             ClausesManager.analyse_status(status, room)
                             orientation = HC(status["orientation"])
                         elif action == "move":
-                            if is_valid_position(move_forward(position, orientation), room, N_ROW, N_COL):
+                            if is_valid_position(move_forward(position, orientation), room):
                                 if is_adjacent:
-                                    neighbors = get_adjacent_positions(cur, room, N_ROW, N_COL)
+                                    neighbors = get_adjacent_positions(cur, room)
                                     movements.append(position)
                                 status = HR.move()
                                 ClausesManager.analyse_status(status, room)
@@ -173,7 +173,7 @@ def explore_dfs_v1(room, status):
                                 cur = st.pop()
                         position = status["position"]
         else:
-            neighbors = get_adjacent_positions(cur, room, N_ROW, N_COL)
+            neighbors = get_adjacent_positions(cur, room)
         for neighbor in neighbors:
             if neighbor not in visited:
                 st.append(neighbor)
@@ -273,6 +273,7 @@ def explore_dfs(room, status):
         print("neighbors", neighbors)
         print("guarded", ClausesManager.guarded_positions)
         for successor in neighbors:
+            #TODO not visited
             if is_valid_position(successor, room) and successor not in visited:
                 successors_score.append((successor, get_successor_score(successor, room, ClausesManager,
                                                                         get_orientation_case(position, successor))))

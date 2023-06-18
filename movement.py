@@ -68,24 +68,23 @@ def is_blocked(room, visited, position, orientation, n_row, n_col):
     # If all square arround are walls,guard or visited
     turn = turn_clockwise(orientation)
     if (
-            is_valid_position(move_forward(position, orientation), room, n_row, n_col)
+            is_valid_position(move_forward(position, orientation), room)
             and move_forward(position, orientation) not in visited
     ):
         return False
     if (
-            is_valid_position(move_forward(position, turn), room, n_row, n_col)
+            is_valid_position(move_forward(position, turn), room)
             and move_forward(position, turn) not in visited
     ):
         return False
     if (
             is_valid_position(
-                move_forward(position, turn_anti_clockwise(orientation)), room, n_row, n_col
-            )
+                move_forward(position, turn_anti_clockwise(orientation)), room)
             and move_forward(position, turn_anti_clockwise(orientation)) not in visited
     ):
         return False
     if (
-            is_valid_position(move_forward(position, turn_clockwise(turn)), room, n_row, n_col)
+            is_valid_position(move_forward(position, turn_clockwise(turn)), room)
             and move_forward(position, turn_clockwise(turn)) not in visited
     ):
         return False
