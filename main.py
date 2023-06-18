@@ -1,3 +1,5 @@
+from typing import NamedTuple
+
 from ClausesManager import ClausesManager
 from hitman.hitman import HC, HitmanReferee
 from movement import move_forward, turn_anti_clockwise, is_valid_position, is_blocked, turn_clockwise, \
@@ -160,9 +162,26 @@ def explore_dfs(room, status):
                         position = status["position"]
         else:
             neighbors = get_adjacent_positions(cur, room, N_ROW, N_COL)
-        for neighbor in neighbors:
-            if neighbor not in visited:
-                st.append(neighbor)
+        successors_score = []
+        for successor in neighbors:
+            if successor not in visited:
+                if room[N_ROW - 1 - int(successor[1])][int(successor[0])] in [HC.EMPTY, HC.TARGET, HC.SUIT, HC.PIANO_WIRE]:
+                    successors_score.append((successor, 1))
+                elif room[N_ROW - 1 - int(successor[1])][int(successor[0])] in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E,
+                                                                            HC.CIVIL_W]:
+                    successors_score.append((successor, 2))
+                elif successor in ClausesManager.guarded_positions:
+                    successors_score.append((successor, -5))
+                elif room[N_ROW - 1 - int(successor[1])][int(successor[0])] not in [HC.WALL, HC.GUARD_N, HC.GUARD_S,                                                              HC.GUARD_E, HC.GUARD_W]:
+                    successors_score.append((successor, 5))
+        #get max successor
+
+        successors_score.sort(key=lambda x: x[1], reverse=True)
+        successor_max = successors_score[0]
+        st.append(successor_max[0])
+
+
+
 
         # logs
         print("Visited: ", visited)
