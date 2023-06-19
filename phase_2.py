@@ -1,3 +1,5 @@
+# ajout d'avancer sur la case quand je tue un civil et/ou un garde.
+
 from hitman.hitman import HC, complete_map_example, HitmanReferee
 import heapq
 from itertools import count
@@ -14,6 +16,7 @@ class Action(Enum):
     TUER = "tuer"
     RAMASSER_ARME = "ramassaer_corde"
 
+
 class Case:
     def __init__(self, coordonnees):
         self.coordonnees = coordonnees
@@ -22,6 +25,8 @@ class Case:
         self.f = 0  # g + h
         self.parent = None
         self.action = None
+        self.map = None
+
     def get_neighbors(self, map):
         neighbors = []
         x, y = self.coordonnees
@@ -34,6 +39,7 @@ class Case:
                 neighbors.append(case)
         return (neighbors)
 
+
 def a_star(map, start, goal):
     open_set = []  # Noeuds à explorer
     i = 0
@@ -41,10 +47,11 @@ def a_star(map, start, goal):
     counter = count()
     heapq.heappush(open_set, (start.f, next(counter), start))
     # si i depasse 1000, alors cela retourne None, cela veut dire que le goal n'est pas atteignable
-    while open_set and i < 100000:  # evite les boucles infinies
+    while open_set and i < 10000000:  # evite les boucles infinies
         i = i + 1
         current = heapq.heappop(open_set)[2]
 
+        current.map = map
         if current.coordonnees == goal.coordonnees:
             if map[current.coordonnees] == HC.PIANO_WIRE:
                 current.action = Action.RAMASSER_ARME
@@ -62,7 +69,7 @@ def a_star(map, start, goal):
         closed_set.add(current)
 
         for neighbor in current.get_neighbors(map):
-            if neighbor in closed_set: # A voir mais beaucoup moins performant sans
+            if neighbor in closed_set:  # A voir mais beaucoup moins performant sans
                 continue
             if neighbor not in open_set:
 
@@ -76,6 +83,7 @@ def a_star(map, start, goal):
                     neighbor.action = Action.AVANCER
 
                 neighbor.parent = current
+                neighbor.map = neighbor.parent.map
                 neighbor.g = current.g + 1
 
                 # idée pour eviter les cases où regardent les gardes
@@ -83,30 +91,35 @@ def a_star(map, start, goal):
                     neighbor.h += 6  # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
 
                 neighbor.h += math.sqrt((neighbor.coordonnees[0] - goal.coordonnees[0]) ** 2) + math.sqrt((
-                    (neighbor.coordonnees[1] - goal.coordonnees[1]) ** 2))
+                        (neighbor.coordonnees[1] - goal.coordonnees[1]) ** 2))
                 neighbor.f = neighbor.g + neighbor.h
                 heapq.heappush(open_set, (neighbor.f, next(counter), neighbor))
     return None
-def print_path(path):   # affiche le path avec les actions associées a réaliser dans chaque case
+
+
+def print_path(path):  # affiche le path avec les actions associées a réaliser dans chaque case
     print("\n")
     # mettre les actions aux cases associées
     if path != None:
         # je fais - 2 car je veux pas que l'avant derniere case prenne la valeur de la derniere
-        for i in range(len(path)-2):
-            path[i].action = path[i+1].action
-        if path[len(path)-1].action == Action.AVANCER:
-            path[len(path)-1].action = None
-        #path[len(path)-1].action = None
+        for i in range(len(path) - 2):
+            path[i].action = path[i + 1].action
+        if path[len(path) - 1].action == Action.AVANCER:
+            path[len(path) - 1].action = None
+        # path[len(path)-1].action = None
         # print mais provisoire car sert juste a observer pour le moment
         for case in path:
             print(case.coordonnees, end=' ')
-            print(case.action)
+            print(case.action, end='  ')
+            print(case.map)
         print()
     else:
         print("path is empty")
         return None
 
-def get_penalties(map):     # fonction qui recupere les case où nous sommes repérées par un garde, ce met a jour qu'une fois la map modifié du coup
+
+def get_penalties(
+        map):  # fonction qui recupere les case où nous sommes repérées par un garde, ce met a jour qu'une fois la map modifié du coup
     penalites = []
     for key, values in complete_map_example.items():
         if values == HC.GUARD_S:
@@ -127,6 +140,7 @@ def get_penalties(map):     # fonction qui recupere les case où nous sommes rep
             penalites.append(Case(((x - 2), y)).coordonnees)
         return penalites
 
+
 def get_civil_guard(map):  # fonction qui recupere les coordonnees des gardes et des civils
     civil_or_guard = []
     # ajouter coordonnées des civils et gardes
@@ -135,7 +149,9 @@ def get_civil_guard(map):  # fonction qui recupere les coordonnees des gardes et
             civil_or_guard.append(key)
     return civil_or_guard
 
-def update_map(map, path):  # update de la map seulement a la fin de la premiere recherche, a modifier pour qu'on puisse mette a jour en direct
+
+def update_map(map,
+               path):  # update de la map seulement a la fin de la premiere recherche, a modifier pour qu'on puisse mette a jour en direct
     for i in range(len(path)):
         if path[i].action == Action.TUER:
             # Vérifier si la case suivante existe
@@ -145,21 +161,22 @@ def update_map(map, path):  # update de la map seulement a la fin de la premiere
 
     return map
 
+
 def phase2_run(hr, path, status, map):
     for i in range(len(path)):
         # trouver l'orientation but
         orientation = status["orientation"].value
-        if i < len(path)-1:
+        if i < len(path) - 1:
             x, y = path[i].coordonnees
-            x1, y1 = path[i+1].coordonnees
+            x1, y1 = path[i + 1].coordonnees
             if x > x1:
-                orientation_but = 17  #Ouest
+                orientation_but = 17  # Ouest
             elif x < x1:
-                orientation_but = 15  #Est
+                orientation_but = 15  # Est
             elif y > y1:
-                orientation_but = 16  #Sud
+                orientation_but = 16  # Sud
             elif y < y1:
-                orientation_but = 14  #Nord
+                orientation_but = 14  # Nord
 
             if orientation - orientation_but == -3:
                 status = hr.turn_anti_clockwise()
@@ -186,11 +203,15 @@ def phase2_run(hr, path, status, map):
         elif path[i].action == Action.TUER and map[path[i].coordonnees] == HC.TARGET:
             status = hr.kill_target()
             print(status)
-        elif path[i].action == Action.TUER and str(map[path[i+1].coordonnees]).startswith('HC.CIVIL'):
+        elif path[i].action == Action.TUER and str(map[path[i + 1].coordonnees]).startswith('HC.CIVIL'):
             status = hr.neutralize_civil()
+            print(status)
+            status = hr.move()
             print(status)
         elif path[i].action == Action.TUER and str(map[path[i + 1].coordonnees]).startswith('HC.GUARD'):
             status = hr.neutralize_guard()
+            print(status)
+            status = hr.move()
             print(status)
     return status
 
@@ -212,7 +233,7 @@ def function_phase_2():
 
     path = a_star(complete_map_example, case_depart, case_corde)
     print_path(path)
-    status = phase2_run(hr, path, status, complete_map_example)  #  fonction qui appelle l'arbitre
+    status = phase2_run(hr, path, status, complete_map_example)  # fonction qui appelle l'arbitre
     complete_map_example = update_map(complete_map_example, path)  # modification que à la fin de la phase (pas opti)
 
     path = a_star(complete_map_example, case_corde, case_cible)
@@ -223,7 +244,6 @@ def function_phase_2():
     path = a_star(complete_map_example, case_cible, case_depart)
     print_path(path)
     phase2_run(hr, path, status, complete_map_example)
-
 
     _, score, history = hr.end_phase2()
     pprint(score)
