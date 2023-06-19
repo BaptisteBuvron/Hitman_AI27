@@ -30,7 +30,7 @@ def main():
     correct_map = start_exploring(room, status)
 
     # Start phase 2
-    # function_phase_2()
+    function_phase_2(HR, correct_map)
 
 
 def start_exploring(room, status):
@@ -49,7 +49,7 @@ def start_exploring(room, status):
     print("Score: ", score)
     print("Correct map: ", correct_map)
 
-    ClausesManager.write_dimacs_files(ClausesManager.clauses)
+    #ClausesManager.write_dimacs_files(ClausesManager.clauses)
     return correct_map
 
 
