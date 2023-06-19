@@ -3,7 +3,8 @@ from typing import NamedTuple
 from ClausesManager import ClausesManager
 from hitman.hitman import HC, HitmanReferee
 from movement import move_forward, turn_anti_clockwise, is_valid_position, is_blocked, turn_clockwise, \
-    positions_are_adjacent, get_actions_moves, get_adjacent_positions, get_successor_score, get_orientation_case
+    positions_are_adjacent, get_actions_moves, get_adjacent_positions, get_successor_score, get_orientation_case, \
+    get_best_move
 from phase_2 import function_phase_2
 
 # globals
@@ -24,7 +25,8 @@ def main():
     room = [[0 for j in range(status["n"])] for i in range(status["m"])]
     position = status["position"]
     room[N_ROW - 1 - int(position[1])][int(position[0])] = HC.EMPTY
-    ClausesManager = ClausesManager(status["m"], status["n"], status["guard_count"], status["civil_count"])
+    debug = True
+    ClausesManager = ClausesManager(status["m"], status["n"], status["guard_count"], status["civil_count"], debug)
     ClausesManager.analyse_status(status, room)
 
     correct_map = start_exploring(room, status)
@@ -36,7 +38,8 @@ def main():
 def start_exploring(room, status):
     # TODO change move
     #explore(room, set(), status)
-    explore_dfs(room, status)
+    #explore_dfs(room, status)
+    explore_v3(room, status)
     # transform room to map_info: Dict[Tuple[int, int], List[HC]]
     map_info = {}
     for i in range(len(room[0])):
@@ -93,6 +96,46 @@ def explore(room, visited, status):
     else:
         print("TURN CLOCKWISE")
         explore(room, visited, HR.turn_clockwise())
+
+
+def explore_v3(room, status):
+    global ClausesManager
+    position = status["position"]
+    orientation = HC(status["orientation"])
+    error = False
+    deducted = 0
+
+    while not is_discovered(room) and not error:
+        move = get_best_move(room, position, orientation, ClausesManager)
+        actions = get_actions_moves(position, move, orientation)
+        action = actions[0]
+        print("actions",actions)
+        if action == "turn_anti_clockwise":
+            status = HR.turn_anti_clockwise()
+            ClausesManager.analyse_status(status, room)
+        elif action == "turn_clockwise":
+            status = HR.turn_clockwise()
+            ClausesManager.analyse_status(status, room)
+        elif action == "move":
+            status = HR.move()
+            ClausesManager.analyse_status(status, room)
+        if status["status"] != "OK":
+            print("ERROR")
+            error = True
+        position = status["position"]
+        orientation = HC(status["orientation"])
+        print("move: ", move)
+        print("action: ", action)
+        #try deduct arroud:
+        if not ClausesManager.debug:
+            positions = get_adjacent_positions(position, room)
+            deducted += ClausesManager.deduct(room)
+        #input("press enter to continue")
+        pass
+
+    pass
+    print("Finished")
+    print("Deducted case: ", deducted)
 
 
 def explore_dfs_v1(room, status):
