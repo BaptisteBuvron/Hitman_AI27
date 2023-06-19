@@ -76,12 +76,12 @@ def a_star(map, start, goal):
                 continue
             if neighbor not in open_set:
                 # on tue dans tout les cas mais on augmente l'heuristique, l'algo choisira tout seul
-                if neighbor.coordonnees in get_civil_guard(map):
+                if neighbor.coordonnees in get_guard(map):
                     neighbor.action = Action.TUER  # pour l'instant je mets dans neighbor car c'est plus simple et apres dans print_path je redecale les actions
-                    neighbor.h += 100  # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
+                    neighbor.h += 6 # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
                 if map[neighbor.coordonnees] == HC.TARGET and case_cible.coordonnees == goal.coordonnees:
                     neighbor.action = Action.TUER
-                if map[neighbor.coordonnees] == HC.EMPTY or map[neighbor.coordonnees] == HC.PIANO_WIRE:
+                if map[neighbor.coordonnees] == HC.EMPTY or map[neighbor.coordonnees] == HC.PIANO_WIRE or str(map[neighbor.coordonnees]).startswith('HC.CIVIL') or map[neighbor.coordonnees] == HC.SUIT:
                     neighbor.action = Action.AVANCER
                 if map[neighbor.coordonnees] == HC.TARGET and not case_cible.coordonnees == goal.coordonnees:
                     continue
@@ -90,7 +90,7 @@ def a_star(map, start, goal):
 
                 # idée pour eviter les cases où regardent les gardes
                 if neighbor.coordonnees in get_penalties(map):
-                    neighbor.h += 100  # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
+                    neighbor.h += 6  # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
 
                 neighbor.h += math.sqrt((neighbor.coordonnees[0] - goal.coordonnees[0]) ** 2) + math.sqrt((
                         (neighbor.coordonnees[1] - goal.coordonnees[1]) ** 2))
@@ -126,30 +126,37 @@ def get_penalties(map):  # fonction qui recupere les case où nous sommes repér
     for key, values in map.items():
         if values == HC.GUARD_S:
             x, y = key[0], key[1]
-            penalites.append(Case((x, (y - 1))).coordonnees)
-            penalites.append(Case((x, (y - 2))).coordonnees)
+            if map[(x, (y - 1))] == HC.EMPTY:
+                penalites.append(Case((x, (y - 1))).coordonnees)
+            if map[(x, (y - 2))] == HC.EMPTY:
+                penalites.append(Case((x, (y - 2))).coordonnees)
         if values == HC.GUARD_N:
             x, y = key[0], key[1]
-            penalites.append(Case((x, (y + 1))).coordonnees)
-            penalites.append(Case((x, (y + 2))).coordonnees)
+            if map[(x, (y + 1))] == HC.EMPTY:
+                penalites.append(Case((x, (y + 1))).coordonnees)
+            if map[(x, (y + 2))] == HC.EMPTY:
+                penalites.append(Case((x, (y + 2))).coordonnees)
         if values == HC.GUARD_E:
             x, y = key[0], key[1]
-            penalites.append(Case(((x + 1), y)).coordonnees)
-            penalites.append(Case(((x + 2), y)).coordonnees)
+            if map[((x + 1), y)] == HC.EMPTY:
+                penalites.append(Case(((x + 1), y)).coordonnees)
+            if map[((x + 2), y)] == HC.EMPTY:
+                penalites.append(Case(((x + 2), y)).coordonnees)
         if values == HC.GUARD_W:
             x, y = key[0], key[1]
-            penalites.append(Case(((x - 1), y)).coordonnees)
-            penalites.append(Case(((x - 2), y)).coordonnees)
-        return penalites
+            if map[((x - 1), y)] == HC.EMPTY:
+                penalites.append(Case(((x - 1), y)).coordonnees)
+            if map[((x - 2), y)] == HC.EMPTY:
+                penalites.append(Case(((x - 2), y)).coordonnees)
+    return penalites
 
-
-def get_civil_guard(map):  # fonction qui recupere les coordonnees des gardes et des civils
-    civil_or_guard = []
+def get_guard(map):  # fonction qui recupere les coordonnees des gardes et des civils
+    guard = []
     # ajouter coordonnées des civils et gardes
     for key, valeur in map.items():
-        if "GUARD" in str(valeur) or "CIVIL" in str(valeur):
-            civil_or_guard.append(key)
-    return civil_or_guard
+        if "GUARD" in str(valeur):
+            guard.append(key)
+    return guard
 
 
 def update_map(map,path):  # update de la map seulement a la fin de la premiere recherche, a modifier pour qu'on puisse mette a jour en direct
