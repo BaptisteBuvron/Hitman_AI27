@@ -122,6 +122,8 @@ def explore_v3(room, status):
         orientation = HC(status["orientation"])
         print("move: ", move)
         print("action: ", action)
+        ClausesManager.write_dimacs_files(ClausesManager.clauses)
+        #input("press enter to continue")
         pass
 
     pass

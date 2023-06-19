@@ -16,6 +16,7 @@ from utils import OS
 class Type(Enum):
     GUARD = 18
     CIVIL = 19
+    LISTENING = 20
 
 
 class ClausesManager:
@@ -128,6 +129,22 @@ class ClausesManager:
                 for type in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
                     self.clauses.append([self.get_variable(Type.GUARD, i, j), -self.get_variable(type, i, j)])
 
+        # If a cell is a LISTENING, the cell is CIVIL or GUARD
+        for i in range(0, self.N_COL):
+            for j in range(0, self.N_ROW):
+                tempClause = []
+                tempClause.append(-self.get_variable(Type.LISTENING, i, j))
+                for type in [Type.CIVIL, Type.GUARD]:
+                    tempClause.append(-self.get_variable(type, i, j))
+                self.clauses.append(tempClause)
+
+        # If a cell is a GUARD, the cell is LESTENING
+        for i in range(0, self.N_COL):
+            for j in range(0, self.N_ROW):
+                    self.clauses.append([self.get_variable(Type.LISTENING, i, j), -self.get_variable(Type.GUARD, i, j)])
+                    self.clauses.append([self.get_variable(Type.LISTENING, i, j), -self.get_variable(Type.CIVIL, i, j)])
+
+
     def create_clauses_max_type(self, positions: List, types: List, max: int, ):
         # Il y a exactement 2 guards test array 3*3
         # get all values of dict
@@ -195,9 +212,11 @@ class ClausesManager:
                     pass
                 for type in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
                     if HC(vision[1]) == type:
-                        for i in range(1,3):
+                        for i in range(1, 3):
                             position_guarded = move_forward(vision[0], guard_orientation_to_orientation(type), i)
-                            if is_inside_room(position_guarded, self.N_ROW, self.N_COL) and room[self.N_ROW - 1 - int(position_guarded[1])][int(position_guarded[0])] not in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
+                            if is_inside_room(position_guarded, self.N_ROW, self.N_COL) and \
+                                    room[self.N_ROW - 1 - int(position_guarded[1])][int(position_guarded[0])] not in [
+                                HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
                                 self.guarded_positions.append(position_guarded)
 
         if status["is_in_guard_range"]:
@@ -214,8 +233,8 @@ class ClausesManager:
             for orientation in [HC.N, HC.S, HC.E, HC.W]:
                 pos = move_forward(status["position"], orientation, 1)
                 if is_inside_room(pos, self.N_ROW, self.N_COL):
-                    #self.clauses.append(
-                     #       [-self.get_variable(opposite_orientation_guard(orientation), pos[0], pos[1])])
+                    # self.clauses.append(
+                    #       [-self.get_variable(opposite_orientation_guard(orientation), pos[0], pos[1])])
                     pass
 
         if status["hear"] != 0:
@@ -223,13 +242,17 @@ class ClausesManager:
                 # Il y a x gardes ou un invités dans une des 2 cases autour de nous
                 positions = self.get_positions_around(status["position"], 2)
                 # remove the known cells
-                positions = [position for position in positions if
-                             room[self.N_ROW - 1 - int(position[1])][int(position[0])] not in [HC.WALL, HC.EMPTY,
-                                                                                               HC.TARGET,
-                                                                                               HC.PIANO_WIRE, HC.SUIT]]
+                #positions = [position for position in positions if
+                #             room[self.N_ROW - 1 - int(position[1])][int(position[0])] not in [HC.WALL, HC.EMPTY,
+                #                                                                               HC.TARGET,
+                #                                                                               HC.PIANO_WIRE, HC.SUIT]]
+                for position in positions:
+                    if room[self.N_ROW - 1 - int(position[1])][int(position[0])] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E,HC.GUARD_W, HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
+                        positions.remove(position)
+                        status["hear"] -= 1
 
-                #self.create_clauses_max_type(positions,[Type.GUARD, Type.CIVIL], status["hear"])
-                #self.visited.add(status["position"])
+                self.create_clauses_max_type(positions, [Type.LISTENING], status["hear"])
+                self.visited.add(status["position"])
                 pass
         else:
             # Vérifier combien de garde ou de civils qui ne sont pas dans la zone d'écoute, si la soustraction est en dessous de 5 ajouter les clauses.

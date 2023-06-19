@@ -1,6 +1,4 @@
 import heapq
-from pprint import pprint
-from typing import List
 
 from hitman.hitman import HC
 
@@ -293,7 +291,6 @@ def get_best_move(room, position, orientation, ClausesManager):
     for successor in successors:
         successors_scores.append((successor, get_successor_score(successor, room, ClausesManager, get_orientation_case(position, successor))))
     successors_scores.sort(key=lambda x: x[1], reverse=True)
-
     if successors_scores[0][1] < 5:
         print("Dijkstra")
         return get_next_unexplored_position(room, position, ClausesManager)
@@ -303,7 +300,6 @@ def get_best_move(room, position, orientation, ClausesManager):
 def get_next_unexplored_position(room, position, ClauseManager):
     #use dijkstra to get the next unexplored position
     unexplored_position = []
-    n_row = len(room)
     for i in range(len(room)):
         for j in range(len(room[0])):
             if get_type_of_room(room, (j, i)) not in [HC.GUARD_E, HC.GUARD_N, HC.GUARD_S, HC.GUARD_W, HC.CIVIL_E, HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_W,
@@ -312,8 +308,6 @@ def get_next_unexplored_position(room, position, ClauseManager):
     unexplored_position.sort(key=lambda x: x[1][1])
     print(unexplored_position)
     return unexplored_position[0][1][0][1]
-
-
 
 def get_neighbors(room, position):
     """
@@ -351,7 +345,7 @@ def dijkstra(room, position,goal, ClausesManager):
             elif get_type_of_room(room, (i,j)) in [HC.EMPTY, HC.TARGET, HC.SUIT, HC.PIANO_WIRE, HC.CIVIL_E, HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_W]:
                 room_priority[j][i] = 1
             else:
-                room_priority[j][i] = 100000000
+                room_priority[j][i] = 1000000000
     room_priority[goal[1]][goal[0]] = 0
 
     # Initialize the distance matrix with infinite values
