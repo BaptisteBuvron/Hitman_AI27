@@ -9,7 +9,7 @@ from typing import List
 from sympy import symbols, to_cnf
 
 from hitman.hitman import HC
-from movement import move_forward, is_valid_position, is_inside_room
+from movement import move_forward, is_inside_room, opposite_orientation_guard, guard_orientation_to_orientation
 from utils import OS
 
 
@@ -17,9 +17,10 @@ class Type(Enum):
     GUARD = 18
     CIVIL = 19
 
-class ClausesManager:
 
-    all_types = [HC.GUARD_E, HC.GUARD_N, HC.GUARD_S, HC.GUARD_W, HC.CIVIL_E, HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_W, HC.TARGET, HC.SUIT, HC.PIANO_WIRE, HC.EMPTY, HC.WALL, Type.GUARD, Type.CIVIL]
+class ClausesManager:
+    all_types = [HC.GUARD_E, HC.GUARD_N, HC.GUARD_S, HC.GUARD_W, HC.CIVIL_E, HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_W,
+                 HC.TARGET, HC.SUIT, HC.PIANO_WIRE, HC.EMPTY, HC.WALL, Type.GUARD, Type.CIVIL]
 
     def __init__(self, N_ROW: int, N_COL: int, N_GUARDS: int, N_CIVILS: int):
         self.visited = set()
@@ -30,6 +31,8 @@ class ClausesManager:
         self.N_COL = N_COL
         self.N_GUARDS = N_GUARDS
         self.N_CIVILS = N_CIVILS
+        self.SEENS = []
+        self.guarded_positions = []
         self.create_variables()
         self.create_clauses()
 
@@ -95,8 +98,7 @@ class ClausesManager:
                                     [-self.get_variable(type, i, j), -self.get_variable(type, k, l)]
                                 )
 
-
-        #If a cell is a GUARD, the cell is GUARD_N, GUARD_S, GUARD_E or GUARD_W
+        # If a cell is a GUARD, the cell is GUARD_N, GUARD_S, GUARD_E or GUARD_W
         for i in range(0, self.N_COL):
             for j in range(0, self.N_ROW):
                 tempClause = []
@@ -105,7 +107,7 @@ class ClausesManager:
                     tempClause.append(-self.get_variable(type, i, j))
                 self.clauses.append(tempClause)
 
-        #If a cell is a CIVIL, the cell is CIVIL_N, CIVIL_S, CIVIL_E or CIVIL_W
+        # If a cell is a CIVIL, the cell is CIVIL_N, CIVIL_S, CIVIL_E or CIVIL_W
         for i in range(0, self.N_COL):
             for j in range(0, self.N_ROW):
                 tempClause = []
@@ -114,13 +116,13 @@ class ClausesManager:
                     tempClause.append(-self.get_variable(type, i, j))
                 self.clauses.append(tempClause)
 
-        #If a cell is a CIVIL_N or CIVIL_S or CIVIL_E or CIVIL_W, the cell is a CIVIL
+        # If a cell is a CIVIL_N or CIVIL_S or CIVIL_E or CIVIL_W, the cell is a CIVIL
         for i in range(0, self.N_COL):
             for j in range(0, self.N_ROW):
                 for type in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
                     self.clauses.append([self.get_variable(Type.CIVIL, i, j), -self.get_variable(type, i, j)])
 
-        #If a cell is a GUARD_N or GUARD_S or GUARD_E or GUARD_W, the cell is a GUARD
+        # If a cell is a GUARD_N or GUARD_S or GUARD_E or GUARD_W, the cell is a GUARD
         for i in range(0, self.N_COL):
             for j in range(0, self.N_ROW):
                 for type in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
@@ -132,6 +134,8 @@ class ClausesManager:
         values = list(self.variables.values())
         ls = symbols(" ".join([str(i) for i in values]))
         combinations = list(itertools.combinations(positions, max))
+        if len(combinations) <= 1:
+            return
         number = 0
         for comb in combinations:
             print(
@@ -185,40 +189,35 @@ class ClausesManager:
                 self.clauses.append(
                     [self.get_variable(HC(vision[1]), int(vision[0][0]), int(vision[0][1]))]
                 )
+                self.SEENS.append((int(vision[0][0]), int(vision[0][1])))
                 if HC(vision[1]) == HC.WALL:
                     # TODO Add blocked cells
                     pass
+                for type in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
+                    if HC(vision[1]) == type:
+                        for i in range(1,3):
+                            position_guarded = move_forward(vision[0], guard_orientation_to_orientation(type), i)
+                            if is_inside_room(position_guarded, self.N_ROW, self.N_COL) and room[self.N_ROW - 1 - int(position_guarded[1])][int(position_guarded[0])] not in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
+                                self.guarded_positions.append(position_guarded)
 
         if status["is_in_guard_range"]:
             clauses = []
-            top = move_forward(status["position"], HC.N)
-            if is_inside_room(top, self.N_ROW, self.N_COL):
-                clauses.append(self.get_variable(HC.GUARD_S, top[0], top[1]))
-            left = move_forward(status["position"], HC.W)
-            if is_inside_room(left, self.N_ROW, self.N_COL):
-                clauses.append(self.get_variable(HC.GUARD_E, left[0], left[1]))
-            right = move_forward(status["position"], HC.E)
-            if is_inside_room(right, self.N_ROW, self.N_COL):
-                clauses.append(self.get_variable(HC.GUARD_W, right[0], right[1]))
-            bottom = move_forward(status["position"], HC.S)
-            if is_inside_room(bottom, self.N_ROW, self.N_COL):
-                clauses.append(self.get_variable(HC.GUARD_N, bottom[0], bottom[1]))
+            self.guarded_positions.append(status["position"])
+            for orientation in [HC.N, HC.S, HC.E, HC.W]:
+                for step in range(1, 3):
+                    pos = move_forward(status["position"], orientation, step)
+                    if is_inside_room(pos, self.N_ROW, self.N_COL):
+                        clauses.append(self.get_variable(opposite_orientation_guard(orientation), pos[0], pos[1]))
             self.clauses.append(clauses)
-            self.deduct(room)
+            # self.deduct(room)
         else:
-            # Il n'y a pas de garde dans les 4 cases autour de nous
-            top = move_forward(status["position"], HC.N)
-            if is_valid_position(top, room, self.N_ROW, self.N_COL):
-                self.clauses.append([-self.get_variable(HC.GUARD_S, top[0], top[1])])
-            left = move_forward(status["position"], HC.W)
-            if is_valid_position(left, room, self.N_ROW, self.N_COL):
-                self.clauses.append([-self.get_variable(HC.GUARD_E, left[0], left[1])])
-            right = move_forward(status["position"], HC.E)
-            if is_valid_position(right, room, self.N_ROW, self.N_COL):
-                self.clauses.append([-self.get_variable(HC.GUARD_W, right[0], right[1])])
-            bottom = move_forward(status["position"], HC.S)
-            if is_valid_position(bottom, room, self.N_ROW, self.N_COL):
-                self.clauses.append([-self.get_variable(HC.GUARD_N, bottom[0], bottom[1])])
+            for orientation in [HC.N, HC.S, HC.E, HC.W]:
+                pos = move_forward(status["position"], orientation, 1)
+                if is_inside_room(pos, self.N_ROW, self.N_COL):
+                    #self.clauses.append(
+                     #       [-self.get_variable(opposite_orientation_guard(orientation), pos[0], pos[1])])
+                    pass
+
         if status["hear"] != 0:
             if status["position"] not in self.visited:
                 # Il y a x gardes ou un invités dans une des 2 cases autour de nous
@@ -228,8 +227,8 @@ class ClausesManager:
                              room[self.N_ROW - 1 - int(position[1])][int(position[0])] not in [HC.WALL, HC.EMPTY,
                                                                                                HC.TARGET,
                                                                                                HC.PIANO_WIRE, HC.SUIT]]
-                self.create_clauses_max_type(positions,
-                                             [Type.GUARD, Type.CIVIL], status["hear"])
+
+                #self.create_clauses_max_type(positions,[Type.GUARD, Type.CIVIL], status["hear"])
                 self.visited.add(status["position"])
                 pass
         else:
@@ -240,7 +239,6 @@ class ClausesManager:
                 longueur = 15
                 print(room[i][j], end=" " * (longueur - len(str(room[i][j]))))
             print()
-
         pass
 
     def write_dimacs_files(self, clauses):
@@ -303,13 +301,13 @@ class ClausesManager:
         for i in range(0, self.N_COL):
             for j in range(0, self.N_ROW):
                 if room[self.N_ROW - 1 - j][i] == 0:
-                    for type in HC:
-                        if type not in [HC.N, HC.S, HC.E, HC.W]:
-                            clauses_temp = copy(self.clauses)
-                            clauses_temp.append([-self.get_variable(type, i, j)])
-                            self.write_dimacs_files(clauses_temp)
-                            if not self.execute_gophersat():
-                                print("Found a solution : " + str(type) + " at " + str(i) + " " + str(j))
+                    for type in self.all_types:
+                        clauses_temp = copy(self.clauses)
+                        clauses_temp.append([-self.get_variable(type, i, j)])
+                        self.write_dimacs_files(clauses_temp)
+                        if not self.execute_gophersat():
+                            print("Found a solution : " + str(type) + " at " + str(i) + " " + str(j))
+                            if type not in [Type.GUARD, Type.CIVIL]:
                                 room[self.N_ROW - 1 - j][i] = type
                                 self.clauses.append([self.get_variable(type, i, j)])
         print("End deduction")

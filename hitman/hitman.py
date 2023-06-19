@@ -1,7 +1,7 @@
 __author__ = "Sylvain Lagrue, and Hénoïk Willot"
 __copyright__ = "Copyright 2023, Université de technologie de Compiègne"
 __license__ = "LGPL-3.0"
-__version__ = "0.6.2"
+__version__ = "0.7.1"
 __maintainer__ = "Sylvain Lagrue"
 __email__ = "sylvain.lagrue@utc.fr"
 __status__ = "dev"
@@ -79,7 +79,18 @@ class HC(Enum):
 
 
 # Provisoire...
+
 world_example = [
+    [HC.GUARD_S, HC.GUARD_S, HC.GUARD_S, HC.SUIT, HC.EMPTY, HC.EMPTY, HC.WALL],
+    [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.GUARD_W, HC.EMPTY],
+    [HC.TARGET, HC.WALL, HC.EMPTY, HC.EMPTY, HC.GUARD_W, HC.CIVIL_N, HC.EMPTY],
+    [HC.WALL, HC.WALL, HC.EMPTY, HC.GUARD_E, HC.EMPTY, HC.CIVIL_E, HC.CIVIL_W],
+    [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+    [HC.EMPTY, HC.EMPTY, HC.WALL, HC.WALL, HC.EMPTY, HC.PIANO_WIRE, HC.EMPTY],
+]
+
+
+default_world = [
     [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.SUIT, HC.GUARD_S, HC.WALL, HC.WALL],
     [HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
     [HC.TARGET, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.CIVIL_N, HC.EMPTY],
@@ -87,6 +98,75 @@ world_example = [
     [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
     [HC.EMPTY, HC.EMPTY, HC.WALL, HC.WALL, HC.EMPTY, HC.PIANO_WIRE, HC.EMPTY],
 ]
+
+big_map_example = [
+    [HC.EMPTY, HC.EMPTY, HC.WALL, HC.EMPTY, HC.CIVIL_E, HC.GUARD_W, HC.EMPTY, HC.EMPTY],
+    [HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+    [HC.EMPTY, HC.EMPTY, HC.CIVIL_E, HC.WALL, HC.EMPTY, HC.GUARD_E, HC.EMPTY, HC.EMPTY],
+    [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.GUARD_N, HC.EMPTY, HC.CIVIL_S, HC.EMPTY, HC.EMPTY],
+    [HC.EMPTY, HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.GUARD_W, HC.EMPTY, HC.CIVIL_E],
+    [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+    [HC.TARGET, HC.EMPTY, HC.PIANO_WIRE, HC.WALL, HC.EMPTY, HC.EMPTY, HC.GUARD_W, HC.EMPTY],
+    [HC.EMPTY, HC.WALL, HC.CIVIL_N, HC.GUARD_E, HC.EMPTY, HC.WALL, HC.SUIT, HC.EMPTY],
+    [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.CIVIL_S, HC.EMPTY, HC.EMPTY],
+    [HC.EMPTY, HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+]
+
+
+difficile_map_1 = [[HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.GUARD_W, HC.EMPTY, HC.GUARD_W, HC.EMPTY],
+                   [HC.EMPTY, HC.WALL, HC.EMPTY, HC.WALL, HC.EMPTY, HC.GUARD_S, HC.EMPTY],
+                   [HC.PIANO_WIRE, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.CIVIL_N],
+                   [HC.WALL, HC.WALL, HC.EMPTY, HC.GUARD_E, HC.EMPTY, HC.CIVIL_W, HC.SUIT],
+                   [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.TARGET],
+                   [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY], ]
+
+
+difficile_map_2 = [
+    [HC.GUARD_S, HC.GUARD_S, HC.GUARD_S, HC.SUIT, HC.EMPTY, HC.EMPTY, HC.WALL],
+    [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.GUARD_W, HC.EMPTY],
+    [HC.TARGET, HC.WALL, HC.EMPTY, HC.EMPTY, HC.GUARD_W, HC.CIVIL_N, HC.EMPTY],
+    [HC.WALL, HC.WALL, HC.EMPTY, HC.GUARD_E, HC.EMPTY, HC.CIVIL_E, HC.CIVIL_W],
+    [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+    [HC.EMPTY, HC.EMPTY, HC.WALL, HC.WALL, HC.EMPTY, HC.PIANO_WIRE, HC.EMPTY],
+]
+
+facile_1 = [[HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.SUIT, HC.GUARD_S, HC.WALL, HC.WALL],
+            [HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+            [HC.TARGET, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.CIVIL_N, HC.EMPTY],
+            [HC.WALL, HC.WALL, HC.EMPTY, HC.GUARD_E, HC.EMPTY, HC.CIVIL_E, HC.CIVIL_W],
+            [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+            [HC.EMPTY, HC.EMPTY, HC.WALL, HC.WALL, HC.EMPTY, HC.PIANO_WIRE, HC.EMPTY], ]
+
+facile_2 = [[HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.SUIT, HC.GUARD_S, HC.WALL, HC.WALL],
+                 [HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+                 [HC.TARGET, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.CIVIL_N, HC.EMPTY],
+                 [HC.PIANO_WIRE, HC.WALL, HC.EMPTY, HC.GUARD_E, HC.EMPTY, HC.CIVIL_E, HC.CIVIL_W],
+                 [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+                 [HC.EMPTY, HC.EMPTY, HC.WALL, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY], ]
+
+moyen_1 = [[HC.EMPTY, HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.GUARD_W, HC.EMPTY],
+           [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+           [HC.TARGET, HC.EMPTY, HC.PIANO_WIRE, HC.WALL, HC.EMPTY, HC.EMPTY, HC.GUARD_W],
+           [HC.EMPTY, HC.WALL, HC.CIVIL_N, HC.GUARD_E, HC.EMPTY, HC.WALL, HC.SUIT],
+           [HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.CIVIL_S, HC.EMPTY],
+           [HC.EMPTY, HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY], ]
+
+moyen_2 = [[HC.GUARD_S, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY],
+           [HC.EMPTY, HC.EMPTY, HC.WALL, HC.WALL, HC.EMPTY, HC.WALL, HC.EMPTY],
+           [HC.EMPTY, HC.EMPTY, HC.WALL, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.GUARD_W],
+           [HC.EMPTY, HC.WALL, HC.PIANO_WIRE, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.GUARD_S],
+           [HC.EMPTY, HC.WALL, HC.GUARD_E, HC.EMPTY, HC.EMPTY, HC.WALL, HC.EMPTY],
+           [HC.EMPTY, HC.WALL, HC.TARGET, HC.EMPTY, HC.EMPTY, HC.SUIT, HC.CIVIL_W], ]
+
+small_map_example = [
+    [HC.TARGET, HC.PIANO_WIRE, HC.SUIT],
+    [HC.GUARD_E, HC.EMPTY, HC.EMPTY],
+    [HC.GUARD_E, HC.EMPTY, HC.EMPTY],
+    [HC.WALL, HC.WALL, HC.EMPTY],
+    [HC.EMPTY, HC.EMPTY, HC.EMPTY],
+]
+
+world_example = default_world
 
 complete_map_example = {
     (0, 5): HC.EMPTY,
@@ -190,11 +270,11 @@ class HitmanReferee:
             guess_is_right = True
             for (x, y), content in map_info.items():
                 if (
-                    x >= self.__n
-                    or y >= self.__m
-                    or x < 0
-                    or y < 0
-                    or content != self.__get_world_content(x, y)
+                        x >= self.__n
+                        or y >= self.__m
+                        or x < 0
+                        or y < 0
+                        or content != self.__get_world_content(x, y)
                 ):
                     guess_is_right = False
                 else:
@@ -215,7 +295,7 @@ class HitmanReferee:
         map_content = {(x, y): self.__get_world_content(x, y) for (x, y) in all_tiles}
         return (
             True,
-            f"Your score is {self.__phase1_guess_score-self.__phase1_penalties}",
+            f"Your score is {self.__phase1_guess_score - self.__phase1_penalties}",
             self.__phase1_history,
             map_content,
         )
@@ -295,7 +375,11 @@ class HitmanReferee:
 
         self.__add_history("Move")
 
-        if self.__get_world_content(x + offset_x, y + offset_y) not in [
+        if (
+                not (0 <= x + offset_x < self.__n)
+                or not (0 <= y + offset_y < self.__m)
+                or self.__get_world_content(x + offset_x, y + offset_y)
+                not in [
             HC.EMPTY,
             HC.PIANO_WIRE,
             HC.CIVIL_N,
@@ -304,7 +388,8 @@ class HitmanReferee:
             HC.CIVIL_W,
             HC.SUIT,
             HC.TARGET,
-        ]:
+        ]
+        ):
             if self.__phase == 1:
                 self.__phase1_penalties += 5 * self.__seen_by_guard_num()
                 return self.__get_status_phase_1("Err: invalid move")
@@ -435,7 +520,7 @@ class HitmanReferee:
         self.__is_target_down = True
 
         self.__phase2_penalties += 100 * (
-            self.__seen_by_guard_num() + self.__seen_by_civil_num()
+                self.__seen_by_guard_num() + self.__seen_by_civil_num()
         )
         return self.__get_status_phase_2()
 
@@ -464,7 +549,7 @@ class HitmanReferee:
         self.__update_world_content(x + offset_x, y + offset_y, HC.EMPTY)
         self.__guard_count -= 1
         self.__phase2_penalties += 100 * (
-            self.__seen_by_guard_num() + self.__seen_by_civil_num()
+                self.__seen_by_guard_num() + self.__seen_by_civil_num()
         )
 
         return self.__get_status_phase_2()
@@ -493,7 +578,7 @@ class HitmanReferee:
         self.__update_world_content(x + offset_x, y + offset_y, HC.EMPTY)
         self.__civil_count -= 1
         self.__phase2_penalties += 100 * (
-            self.__seen_by_guard_num() + self.__seen_by_civil_num()
+                self.__seen_by_guard_num() + self.__seen_by_civil_num()
         )
 
         return self.__get_status_phase_2()
@@ -544,7 +629,7 @@ class HitmanReferee:
 
         self.__suit_on = True
         self.__phase2_penalties += 100 * (
-            self.__seen_by_guard_num() + self.__seen_by_civil_num()
+                self.__seen_by_guard_num() + self.__seen_by_civil_num()
         )
         return self.__get_status_phase_2()
 
@@ -559,10 +644,10 @@ class HitmanReferee:
         for l in self.__world:
             for c in l:
                 if (
-                    c == HC.CIVIL_N
-                    or c == HC.CIVIL_E
-                    or c == HC.CIVIL_S
-                    or c == HC.CIVIL_W
+                        c == HC.CIVIL_N
+                        or c == HC.CIVIL_E
+                        or c == HC.CIVIL_S
+                        or c == HC.CIVIL_W
                 ):
                     count += 1
         return count
@@ -572,25 +657,25 @@ class HitmanReferee:
         for l in self.__world:
             for c in l:
                 if (
-                    c == HC.GUARD_N
-                    or c == HC.GUARD_E
-                    or c == HC.GUARD_S
-                    or c == HC.GUARD_W
+                        c == HC.GUARD_N
+                        or c == HC.GUARD_E
+                        or c == HC.GUARD_S
+                        or c == HC.GUARD_W
                 ):
                     count += 1
         return count
 
     def __compute_civils(
-        self,
+            self,
     ) -> Dict[Tuple[int, int], List[Tuple[Tuple[int, int], HC]]]:
         locations = {}
         for l_index, l in enumerate(self.__world):
             for c_index, c in enumerate(l):
                 if (
-                    c == HC.CIVIL_N
-                    or c == HC.CIVIL_E
-                    or c == HC.CIVIL_S
-                    or c == HC.CIVIL_W
+                        c == HC.CIVIL_N
+                        or c == HC.CIVIL_E
+                        or c == HC.CIVIL_S
+                        or c == HC.CIVIL_W
                 ):
                     civil_x, civil_y = (c_index, self.__m - l_index - 1)
                     locations[(civil_x, civil_y)] = self.__get_civil_vision(
@@ -626,27 +711,43 @@ class HitmanReferee:
     def __seen_by_civil_num(self) -> int:
         count = 0
         x, y = self.__pos
+        if self.__get_world_content(x, y) in [
+            HC.CIVIL_N,
+            HC.CIVIL_E,
+            HC.CIVIL_S,
+            HC.CIVIL_W,
+        ]:
+            count = 1
+            self.__is_in_civil_range = True
+            return count
+
         for civil in self.__civils.keys():
-            count += (
-                1
-                if len([0 for ((l, c), _) in self.__civils[civil] if l == x and c == y])
-                > 0
-                else 0
-            )
+            civil_x, civil_y = civil
+            if civil_x == x and civil_y == y:
+                count += 1
+            else:
+                count += (
+                    1
+                    if len(
+                        [0 for ((l, c), _) in self.__civils[civil] if l == x and c == y]
+                    )
+                       > 0
+                    else 0
+                )
         self.__is_in_civil_range = count > 0
         return count
 
     def __compute_guards(
-        self,
+            self,
     ) -> Dict[Tuple[int, int], List[Tuple[Tuple[int, int], HC]]]:
         locations = {}
         for l_index, l in enumerate(self.__world):
             for c_index, c in enumerate(l):
                 if (
-                    c == HC.GUARD_N
-                    or c == HC.GUARD_E
-                    or c == HC.GUARD_S
-                    or c == HC.GUARD_W
+                        c == HC.GUARD_N
+                        or c == HC.GUARD_E
+                        or c == HC.GUARD_S
+                        or c == HC.GUARD_W
                 ):
                     guard_x, guard_y = (c_index, self.__m - l_index - 1)
                     locations[(guard_x, guard_y)] = self.__get_guard_vision(
@@ -692,14 +793,14 @@ class HitmanReferee:
             HC.CIVIL_W,
         ]:
             for guard in self.__guards.keys():
-                # Note : un garde ne peut pas voir au dela d'un objet
+                # Note : un garde ne peut pas voir au dela d'un objet,
                 # mais si Hitman est sur l'objet alors il voit Hitman
                 count += (
                     1
                     if len(
                         [0 for ((l, c), _) in self.__guards[guard] if l == x and c == y]
                     )
-                    > 0
+                       > 0
                     else 0
                 )
         self.__is_in_guard_range = count > 0
