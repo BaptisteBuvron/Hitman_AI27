@@ -229,7 +229,7 @@ class ClausesManager:
                                                                                                HC.PIANO_WIRE, HC.SUIT]]
 
                 #self.create_clauses_max_type(positions,[Type.GUARD, Type.CIVIL], status["hear"])
-                self.visited.add(status["position"])
+                #self.visited.add(status["position"])
                 pass
         else:
             # Vérifier combien de garde ou de civils qui ne sont pas dans la zone d'écoute, si la soustraction est en dessous de 5 ajouter les clauses.
