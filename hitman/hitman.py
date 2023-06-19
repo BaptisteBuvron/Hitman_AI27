@@ -166,7 +166,7 @@ small_map_example = [
     [HC.EMPTY, HC.EMPTY, HC.EMPTY],
 ]
 
-world_example = facile_1
+world_example = default_world
 
 complete_map_example = {
     (0, 5): HC.EMPTY,

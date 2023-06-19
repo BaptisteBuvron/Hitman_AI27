@@ -25,7 +25,8 @@ def main():
     room = [[0 for j in range(status["n"])] for i in range(status["m"])]
     position = status["position"]
     room[N_ROW - 1 - int(position[1])][int(position[0])] = HC.EMPTY
-    ClausesManager = ClausesManager(status["m"], status["n"], status["guard_count"], status["civil_count"])
+    debug = True
+    ClausesManager = ClausesManager(status["m"], status["n"], status["guard_count"], status["civil_count"], debug)
     ClausesManager.analyse_status(status, room)
 
     correct_map = start_exploring(room, status)
@@ -101,8 +102,10 @@ def explore_v3(room, status):
     global ClausesManager
     position = status["position"]
     orientation = HC(status["orientation"])
+    error = False
+    deducted = 0
 
-    while not is_discovered(room):
+    while not is_discovered(room) and not error:
         move = get_best_move(room, position, orientation, ClausesManager)
         actions = get_actions_moves(position, move, orientation)
         action = actions[0]
@@ -117,16 +120,22 @@ def explore_v3(room, status):
             status = HR.move()
             ClausesManager.analyse_status(status, room)
         if status["status"] != "OK":
-            input("ERROR")
+            print("ERROR")
+            error = True
         position = status["position"]
         orientation = HC(status["orientation"])
         print("move: ", move)
         print("action: ", action)
-        ClausesManager.write_dimacs_files(ClausesManager.clauses)
+        #try deduct arroud:
+        if not ClausesManager.debug:
+            positions = get_adjacent_positions(position, room)
+            deducted += ClausesManager.deduct(room)
         #input("press enter to continue")
         pass
 
     pass
+    print("Finished")
+    print("Deducted case: ", deducted)
 
 
 def explore_dfs_v1(room, status):
