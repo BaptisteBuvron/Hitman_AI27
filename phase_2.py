@@ -77,7 +77,7 @@ def a_star(map, start, goal):
                 # on tue dans tout les cas mais on augmente l'heuristique, l'algo choisira tout seul
                 if neighbor.coordonnees in get_guard(map):
                     neighbor.action = Action.TUER  # pour l'instant je mets dans neighbor car c'est plus simple et apres dans print_path je redecale les actions
-                    neighbor.h += 1 # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
+                    neighbor.h += 5 # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
                 if map[neighbor.coordonnees] == HC.TARGET and case_cible.coordonnees == goal.coordonnees:
                     neighbor.action = Action.TUER
                 if map[neighbor.coordonnees] == HC.EMPTY or map[neighbor.coordonnees] == HC.PIANO_WIRE or str(map[neighbor.coordonnees]).startswith('HC.CIVIL') or map[neighbor.coordonnees] == HC.SUIT:
@@ -89,8 +89,7 @@ def a_star(map, start, goal):
 
                 # idée pour eviter les cases où regardent les gardes
                 if neighbor.coordonnees in get_penalties(map):
-
-                    neighbor.h += 1  # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
+                    neighbor.h += 5  # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
 
                 neighbor.h += math.sqrt((neighbor.coordonnees[0] - goal.coordonnees[0]) ** 2) + math.sqrt((
                         (neighbor.coordonnees[1] - goal.coordonnees[1]) ** 2))
