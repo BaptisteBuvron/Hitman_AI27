@@ -41,6 +41,7 @@ class Case:
 
 
 def a_star(map, start, goal):
+    print(map)
     open_set = []  # Noeuds à explorer
     for key, valeur in map.items():
         if valeur == HC.TARGET:
@@ -53,7 +54,6 @@ def a_star(map, start, goal):
     while open_set and i < 100000:  # evite les boucles infinies
         i = i + 1
         current = heapq.heappop(open_set)[2]
-        current.map = map
         if current.coordonnees == goal.coordonnees:
             if map[current.coordonnees] == HC.PIANO_WIRE:
                 current.action = Action.RAMASSER_ARME
@@ -125,27 +125,27 @@ def get_penalties(map):  # fonction qui recupere les case où nous sommes repér
     for key, values in map.items():
         if values == HC.GUARD_S:
             x, y = key[0], key[1]
-            if map[(x, (y - 1))] == HC.EMPTY:
+            if ((y - 1) >= 0) and map[(x, (y - 1))] == HC.EMPTY:
                 penalites.append(Case((x, (y - 1))).coordonnees)
-            if map[(x, (y - 2))] == HC.EMPTY:
+            if ((y - 2) >= 0) and map[(x, (y - 2))] == HC.EMPTY:
                 penalites.append(Case((x, (y - 2))).coordonnees)
         if values == HC.GUARD_N:
             x, y = key[0], key[1]
-            if map[(x, (y + 1))] == HC.EMPTY:
+            if ((y + 1) < N_ROW) and map[(x, (y + 1))] == HC.EMPTY:
                 penalites.append(Case((x, (y + 1))).coordonnees)
-            if map[(x, (y + 2))] == HC.EMPTY:
+            if ((y + 2) < N_ROW) and map[(x, (y + 2))] == HC.EMPTY:
                 penalites.append(Case((x, (y + 2))).coordonnees)
         if values == HC.GUARD_E:
             x, y = key[0], key[1]
-            if map[((x + 1), y)] == HC.EMPTY:
+            if ((x + 1) < N_COL) and map[((x + 1), y)] == HC.EMPTY:
                 penalites.append(Case(((x + 1), y)).coordonnees)
-            if map[((x + 2), y)] == HC.EMPTY:
+            if ((x + 2) < N_COL) and map[((x + 2), y)] == HC.EMPTY:
                 penalites.append(Case(((x + 2), y)).coordonnees)
         if values == HC.GUARD_W:
             x, y = key[0], key[1]
-            if map[((x - 1), y)] == HC.EMPTY:
+            if ((x - 1) >= 0) and map[((x - 1), y)] == HC.EMPTY:
                 penalites.append(Case(((x - 1), y)).coordonnees)
-            if map[((x - 2), y)] == HC.EMPTY:
+            if ((x - 2) >= 0) and map[((x - 2), y)] == HC.EMPTY:
                 penalites.append(Case(((x - 2), y)).coordonnees)
     return penalites
 
@@ -237,7 +237,7 @@ def function_phase_2(HR, correct_map):
     status = HR.start_phase2()
     N_ROW = status["m"]
     N_COL = status["n"]
-
+    print(N_ROW, N_COL)
     # initialsie la case depart et les cases goal
     case_depart = Case((0, 0))
     for key, valeur in correct_map.items():
