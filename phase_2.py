@@ -50,10 +50,9 @@ def a_star(map, start, goal):
     counter = count()
     heapq.heappush(open_set, (start.f, next(counter), start))
     # si i depasse 1000, alors cela retourne None, cela veut dire que le goal n'est pas atteignable
-    while open_set and i < 10000000:  # evite les boucles infinies
+    while open_set and i < 100000:  # evite les boucles infinies
         i = i + 1
         current = heapq.heappop(open_set)[2]
-
         current.map = map
         if current.coordonnees == goal.coordonnees:
             if map[current.coordonnees] == HC.PIANO_WIRE:
@@ -78,7 +77,7 @@ def a_star(map, start, goal):
                 # on tue dans tout les cas mais on augmente l'heuristique, l'algo choisira tout seul
                 if neighbor.coordonnees in get_guard(map):
                     neighbor.action = Action.TUER  # pour l'instant je mets dans neighbor car c'est plus simple et apres dans print_path je redecale les actions
-                    neighbor.h += 6 # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
+                    neighbor.h += 1 # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
                 if map[neighbor.coordonnees] == HC.TARGET and case_cible.coordonnees == goal.coordonnees:
                     neighbor.action = Action.TUER
                 if map[neighbor.coordonnees] == HC.EMPTY or map[neighbor.coordonnees] == HC.PIANO_WIRE or str(map[neighbor.coordonnees]).startswith('HC.CIVIL') or map[neighbor.coordonnees] == HC.SUIT:
@@ -90,7 +89,8 @@ def a_star(map, start, goal):
 
                 # idée pour eviter les cases où regardent les gardes
                 if neighbor.coordonnees in get_penalties(map):
-                    neighbor.h += 6  # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
+
+                    neighbor.h += 1  # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
 
                 neighbor.h += math.sqrt((neighbor.coordonnees[0] - goal.coordonnees[0]) ** 2) + math.sqrt((
                         (neighbor.coordonnees[1] - goal.coordonnees[1]) ** 2))
@@ -160,12 +160,20 @@ def get_guard(map):  # fonction qui recupere les coordonnees des gardes et des c
 
 
 def update_map(map,path):  # update de la map seulement a la fin de la premiere recherche, a modifier pour qu'on puisse mette a jour en direct
+    for key, valeur in map.items():
+        if valeur == HC.TARGET:
+            case_cible = Case(key)
     for i in range(len(path)):
-        if path[i].action == Action.TUER:
+        if path[i].action == Action.TUER and path[i].coordonnees != case_cible.coordonnees:
             # Vérifier si la case suivante existe
             if i + 1 < len(path):
                 next_case = path[i + 1]
                 map[next_case.coordonnees] = HC.EMPTY
+        elif path[i].action == Action.RAMASSER_ARME:
+            map[path[i].coordonnees] = HC.EMPTY
+        elif path[i].action == Action.TUER and path[i].coordonnees == case_cible.coordonnees:
+            map[path[i].coordonnees] = HC.EMPTY
+
 
     return map
 
@@ -239,16 +247,19 @@ def function_phase_2(HR, correct_map):
         if valeur == HC.TARGET:
             case_cible = Case(key)
 
+    print("loading...")
     path = a_star(correct_map, case_depart, case_corde)
     print_path(path)
     status = phase2_run(HR, path, status, correct_map)  # fonction qui appelle l'arbitre
     correct_map = update_map(correct_map, path)  # modification que à la fin de la phase (pas opti)
 
+    print("loading...")
     path = a_star(correct_map, case_corde, case_cible)
     print_path(path)
     status = phase2_run(HR, path, status, correct_map)
     correct_map = update_map(correct_map, path)  # modification que à la fin de la phase (pas opti)
 
+    print("loading...")
     path = a_star(correct_map, case_cible, case_depart)
     print_path(path)
     phase2_run(HR, path, status, correct_map)
