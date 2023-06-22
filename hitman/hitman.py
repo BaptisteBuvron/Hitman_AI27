@@ -1,7 +1,7 @@
 __author__ = "Sylvain Lagrue, and Hénoïk Willot"
 __copyright__ = "Copyright 2023, Université de technologie de Compiègne"
 __license__ = "LGPL-3.0"
-__version__ = "0.7.1"
+__version__ = "1.0.0"
 __maintainer__ = "Sylvain Lagrue"
 __email__ = "sylvain.lagrue@utc.fr"
 __status__ = "dev"
@@ -77,8 +77,6 @@ class HC(Enum):
     S = 16
     W = 17
 
-
-# Provisoire...
 
 world_example = [
     [HC.GUARD_S, HC.GUARD_S, HC.GUARD_S, HC.SUIT, HC.EMPTY, HC.EMPTY, HC.WALL],
@@ -215,7 +213,7 @@ complete_map_example = {
 
 
 class HitmanReferee:
-    def __init__(self, filename: str = ""):
+    def __init__(self, filename: str = "") -> None:
         self.__filename = filename
         if filename == "":
             self.__world = world_example
@@ -244,11 +242,11 @@ class HitmanReferee:
         self.__has_weapon = False
         self.__is_target_down = False
 
-    def start_phase1(self):
+    def start_phase1(self) -> Dict:
         self.__phase = 1
         return self.__get_status_phase_1()
 
-    def __get_status_phase_1(self, err: str = "OK"):
+    def __get_status_phase_1(self, err: str = "OK") -> Dict:
         return {
             "status": err,
             "phase": self.__phase,
@@ -270,11 +268,11 @@ class HitmanReferee:
             guess_is_right = True
             for (x, y), content in map_info.items():
                 if (
-                        x >= self.__n
-                        or y >= self.__m
-                        or x < 0
-                        or y < 0
-                        or content != self.__get_world_content(x, y)
+                    x >= self.__n
+                    or y >= self.__m
+                    or x < 0
+                    or y < 0
+                    or content != self.__get_world_content(x, y)
                 ):
                     guess_is_right = False
                 else:
@@ -295,22 +293,22 @@ class HitmanReferee:
         map_content = {(x, y): self.__get_world_content(x, y) for (x, y) in all_tiles}
         return (
             True,
-            f"Your score is {self.__phase1_guess_score - self.__phase1_penalties}",
+            f"Your score is {self.__phase1_guess_score-self.__phase1_penalties}",
             self.__phase1_history,
             map_content,
         )
 
-    def __get_world_content(self, x: int, y: int):
+    def __get_world_content(self, x: int, y: int) -> HC:
         # provisoire
         return self.__world[self.__m - y - 1][x]
 
-    def __update_world_content(self, x: int, y: int, new_content: HC):
+    def __update_world_content(self, x: int, y: int, new_content: HC) -> None:
         self.__world[self.__m - y - 1][x] = new_content
         # comme un objet bloquant la vue peut être retiré, il faut update les visions
         self.__civils = self.__compute_civils()
         self.__guards = self.__compute_guards()
 
-    def __get_listening(self, dist=2):
+    def __get_listening(self, dist: int = 2) -> int:
         count = 0
         possible_offset = range(-dist, dist + 1)
         offsets = product(possible_offset, repeat=2)
@@ -335,7 +333,7 @@ class HitmanReferee:
 
         return count
 
-    def __get_offset(self):
+    def __get_offset(self) -> Tuple[int, int]:
         if self.__orientation == HC.N:
             offset = 0, 1
         elif self.__orientation == HC.E:
@@ -347,7 +345,7 @@ class HitmanReferee:
 
         return offset
 
-    def __get_vision(self, dist=3):
+    def __get_vision(self, dist: int = 3) -> List[Tuple[Tuple[int, int], HC]]:
         offset_x, offset_y = self.__get_offset()
         pos = self.__pos
         x, y = pos
@@ -362,7 +360,7 @@ class HitmanReferee:
                 break
         return vision
 
-    def move(self):
+    def move(self) -> Dict:
         offset_x, offset_y = self.__get_offset()
         x, y = self.__pos
 
@@ -376,19 +374,19 @@ class HitmanReferee:
         self.__add_history("Move")
 
         if (
-                not (0 <= x + offset_x < self.__n)
-                or not (0 <= y + offset_y < self.__m)
-                or self.__get_world_content(x + offset_x, y + offset_y)
-                not in [
-            HC.EMPTY,
-            HC.PIANO_WIRE,
-            HC.CIVIL_N,
-            HC.CIVIL_E,
-            HC.CIVIL_S,
-            HC.CIVIL_W,
-            HC.SUIT,
-            HC.TARGET,
-        ]
+            not (0 <= x + offset_x < self.__n)
+            or not (0 <= y + offset_y < self.__m)
+            or self.__get_world_content(x + offset_x, y + offset_y)
+            not in [
+                HC.EMPTY,
+                HC.PIANO_WIRE,
+                HC.CIVIL_N,
+                HC.CIVIL_E,
+                HC.CIVIL_S,
+                HC.CIVIL_W,
+                HC.SUIT,
+                HC.TARGET,
+            ]
         ):
             if self.__phase == 1:
                 self.__phase1_penalties += 5 * self.__seen_by_guard_num()
@@ -411,7 +409,7 @@ class HitmanReferee:
             )
             return self.__get_status_phase_2()
 
-    def turn_clockwise(self):
+    def turn_clockwise(self) -> Dict:
         if self.__phase == 1:
             self.__phase1_penalties += 1
             self.__phase1_penalties += 5 * self.__seen_by_guard_num()
@@ -440,7 +438,7 @@ class HitmanReferee:
             else self.__get_status_phase_2()
         )
 
-    def turn_anti_clockwise(self):
+    def turn_anti_clockwise(self) -> Dict:
         if self.__phase == 1:
             self.__phase1_penalties += 1
             self.__phase1_penalties += 5 * self.__seen_by_guard_num()
@@ -468,7 +466,7 @@ class HitmanReferee:
             else self.__get_status_phase_2()
         )
 
-    def start_phase2(self):
+    def start_phase2(self) -> Dict:
         self.__phase = 2
         self.__pos = (0, 0)
         self.__orientation = HC.N
@@ -476,7 +474,7 @@ class HitmanReferee:
         self.__seen_by_civil_num()
         return self.__get_status_phase_2()
 
-    def __get_status_phase_2(self, err: str = "OK"):
+    def __get_status_phase_2(self, err: str = "OK") -> Dict:
         return {
             "status": err,
             "phase": self.__phase,
@@ -497,13 +495,13 @@ class HitmanReferee:
             "is_target_down": self.__is_target_down,
         }
 
-    def end_phase2(self):
+    def end_phase2(self) -> Tuple[bool, str, List]:
         if not self.__is_target_down or not self.__pos == (0, 0):
             return False, "Err: finish the mission and go back to (0,0)", []
         self.__phase = 0
         return True, f"Your score is {- self.__phase2_penalties}", self.__phase2_history
 
-    def kill_target(self):
+    def kill_target(self) -> Dict:
         if self.__phase != 2:
             raise ValueError("Err: invalid phase")
 
@@ -520,11 +518,11 @@ class HitmanReferee:
         self.__is_target_down = True
 
         self.__phase2_penalties += 100 * (
-                self.__seen_by_guard_num() + self.__seen_by_civil_num()
+            self.__seen_by_guard_num() + self.__seen_by_civil_num()
         )
         return self.__get_status_phase_2()
 
-    def neutralize_guard(self):
+    def neutralize_guard(self) -> Dict:
         if self.__phase != 2:
             raise ValueError("Err: invalid phase")
 
@@ -549,12 +547,12 @@ class HitmanReferee:
         self.__update_world_content(x + offset_x, y + offset_y, HC.EMPTY)
         self.__guard_count -= 1
         self.__phase2_penalties += 100 * (
-                self.__seen_by_guard_num() + self.__seen_by_civil_num()
+            self.__seen_by_guard_num() + self.__seen_by_civil_num()
         )
 
         return self.__get_status_phase_2()
 
-    def neutralize_civil(self):
+    def neutralize_civil(self) -> Dict:
         if self.__phase != 2:
             raise ValueError("Err: invalid phase")
 
@@ -578,12 +576,12 @@ class HitmanReferee:
         self.__update_world_content(x + offset_x, y + offset_y, HC.EMPTY)
         self.__civil_count -= 1
         self.__phase2_penalties += 100 * (
-                self.__seen_by_guard_num() + self.__seen_by_civil_num()
+            self.__seen_by_guard_num() + self.__seen_by_civil_num()
         )
 
         return self.__get_status_phase_2()
 
-    def take_suit(self):
+    def take_suit(self) -> Dict:
         if self.__phase != 2:
             raise ValueError("Err: invalid phase")
 
@@ -600,7 +598,7 @@ class HitmanReferee:
 
         return self.__get_status_phase_2()
 
-    def take_weapon(self):
+    def take_weapon(self) -> Dict:
         if self.__phase != 2:
             raise ValueError("Err: invalid phase")
 
@@ -616,7 +614,7 @@ class HitmanReferee:
 
         return self.__get_status_phase_2()
 
-    def put_on_suit(self):
+    def put_on_suit(self) -> Dict:
         if self.__phase != 2:
             raise ValueError("Err: invalid phase")
 
@@ -629,7 +627,7 @@ class HitmanReferee:
 
         self.__suit_on = True
         self.__phase2_penalties += 100 * (
-                self.__seen_by_guard_num() + self.__seen_by_civil_num()
+            self.__seen_by_guard_num() + self.__seen_by_civil_num()
         )
         return self.__get_status_phase_2()
 
@@ -644,10 +642,10 @@ class HitmanReferee:
         for l in self.__world:
             for c in l:
                 if (
-                        c == HC.CIVIL_N
-                        or c == HC.CIVIL_E
-                        or c == HC.CIVIL_S
-                        or c == HC.CIVIL_W
+                    c == HC.CIVIL_N
+                    or c == HC.CIVIL_E
+                    or c == HC.CIVIL_S
+                    or c == HC.CIVIL_W
                 ):
                     count += 1
         return count
@@ -657,25 +655,25 @@ class HitmanReferee:
         for l in self.__world:
             for c in l:
                 if (
-                        c == HC.GUARD_N
-                        or c == HC.GUARD_E
-                        or c == HC.GUARD_S
-                        or c == HC.GUARD_W
+                    c == HC.GUARD_N
+                    or c == HC.GUARD_E
+                    or c == HC.GUARD_S
+                    or c == HC.GUARD_W
                 ):
                     count += 1
         return count
 
     def __compute_civils(
-            self,
+        self,
     ) -> Dict[Tuple[int, int], List[Tuple[Tuple[int, int], HC]]]:
         locations = {}
         for l_index, l in enumerate(self.__world):
             for c_index, c in enumerate(l):
                 if (
-                        c == HC.CIVIL_N
-                        or c == HC.CIVIL_E
-                        or c == HC.CIVIL_S
-                        or c == HC.CIVIL_W
+                    c == HC.CIVIL_N
+                    or c == HC.CIVIL_E
+                    or c == HC.CIVIL_S
+                    or c == HC.CIVIL_W
                 ):
                     civil_x, civil_y = (c_index, self.__m - l_index - 1)
                     locations[(civil_x, civil_y)] = self.__get_civil_vision(
@@ -683,7 +681,7 @@ class HitmanReferee:
                     )
         return locations
 
-    def __get_civil_offset(self, civil):
+    def __get_civil_offset(self, civil: HC) -> Tuple[int, int]:
         if civil == HC.CIVIL_N:
             offset = 0, 1
         elif civil == HC.CIVIL_E:
@@ -695,7 +693,9 @@ class HitmanReferee:
 
         return offset
 
-    def __get_civil_vision(self, civil_x, civil_y):
+    def __get_civil_vision(
+        self, civil_x: int, civil_y: int
+    ) -> List[Tuple[Tuple[int, int], HC]]:
         civil = self.__get_world_content(civil_x, civil_y)
         offset_x, offset_y = self.__get_civil_offset(civil)
         pos = (civil_x, civil_y)
@@ -731,23 +731,23 @@ class HitmanReferee:
                     if len(
                         [0 for ((l, c), _) in self.__civils[civil] if l == x and c == y]
                     )
-                       > 0
+                    > 0
                     else 0
                 )
         self.__is_in_civil_range = count > 0
         return count
 
     def __compute_guards(
-            self,
+        self,
     ) -> Dict[Tuple[int, int], List[Tuple[Tuple[int, int], HC]]]:
         locations = {}
         for l_index, l in enumerate(self.__world):
             for c_index, c in enumerate(l):
                 if (
-                        c == HC.GUARD_N
-                        or c == HC.GUARD_E
-                        or c == HC.GUARD_S
-                        or c == HC.GUARD_W
+                    c == HC.GUARD_N
+                    or c == HC.GUARD_E
+                    or c == HC.GUARD_S
+                    or c == HC.GUARD_W
                 ):
                     guard_x, guard_y = (c_index, self.__m - l_index - 1)
                     locations[(guard_x, guard_y)] = self.__get_guard_vision(
@@ -755,7 +755,7 @@ class HitmanReferee:
                     )
         return locations
 
-    def __get_guard_offset(self, guard):
+    def __get_guard_offset(self, guard: HC) -> Tuple[int, int]:
         if guard == HC.GUARD_N:
             offset = 0, 1
         elif guard == HC.GUARD_E:
@@ -767,7 +767,9 @@ class HitmanReferee:
 
         return offset
 
-    def __get_guard_vision(self, guard_x, guard_y, dist=2):
+    def __get_guard_vision(
+        self, guard_x: int, guard_y: int, dist: int = 2
+    ) -> List[Tuple[Tuple[int, int], HC]]:
         guard = self.__get_world_content(guard_x, guard_y)
         offset_x, offset_y = self.__get_guard_offset(guard)
         pos = (guard_x, guard_y)
@@ -800,13 +802,13 @@ class HitmanReferee:
                     if len(
                         [0 for ((l, c), _) in self.__guards[guard] if l == x and c == y]
                     )
-                       > 0
+                    > 0
                     else 0
                 )
         self.__is_in_guard_range = count > 0
         return count
 
-    def __add_history(self, action):
+    def __add_history(self, action: str) -> None:
         if self.__phase == 1:
             self.__phase1_history.append(action)
         elif self.__phase == 2:
