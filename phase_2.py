@@ -16,10 +16,12 @@ class Action(Enum):
     TUER_TARGET = "tuer_target"
     TUER = "tuer",
     RAMASSER_ARME = "ramasser_corde"
+    RAMASSER_COSTUME = "ramasser_costume"
+    METTRE_COSTUME = "mettre_costume"
 
 
 class Case:
-    def __init__(self, coordonnees, map = None):
+    def __init__(self, coordonnees, map=None):
         self.coordonnees = coordonnees
         self.g = 0  # Le coût depuis l'état initial
         self.h = 0  # L'estimation du coût minimal jusqu'a l'un des buts
@@ -28,8 +30,10 @@ class Case:
         self.action = None
         self.action_case = None
         self.map = map
+        self.got_suit = False
+        self.suit_on_hitman = False
 
-    #to string
+    # to string
     def __repr__(self):
         return f"({self.coordonnees}, {self.f} + {self.g}, {self.action}, {self.action_case})"
 
@@ -47,14 +51,13 @@ class Case:
 
 
 def a_star(map, start, goal):
-    print(map)
     open_set = []  # Noeuds à explorer
     i = 0
     counter = count()
     first_case = Case(start.coordonnees, copy_map(map))
     heapq.heappush(open_set, (start.f, next(counter), first_case))
     # si i depasse 1000, alors cela retourne None, cela veut dire que le goal n'est pas atteignable
-    while open_set and i < 1000000:  # evite les boucles infinies
+    while open_set:  # evite les boucles infinies
         i = i + 1
         current = heapq.heappop(open_set)[2]
         current_map = current.map
@@ -75,17 +78,23 @@ def a_star(map, start, goal):
         for neighbor in current.get_neighbors():
             # on tue dans tout les cas mais on augmente l'heuristique, l'algo choisira tout seul
             map_temp = neighbor.map
+            neighbor.got_suit = current.got_suit
+            neighbor.suit_on_hitman = current.suit_on_hitman
+            neighbor.parent = current
+
             if neighbor.coordonnees in get_guard(map_temp) or map_temp[neighbor.coordonnees] in [HC.CIVIL_E, HC.CIVIL_N,
-                                                                                            HC.CIVIL_S, HC.CIVIL_W]:
+                                                                                                 HC.CIVIL_S,
+                                                                                                 HC.CIVIL_W]:
                 neighbor.action = Action.TUER  # pour l'instant je mets dans neighbor car c'est plus simple et apres dans print_path je redecale les actions
                 neighbor.action_case = neighbor.coordonnees
                 neighbor.coordonnees = neighbor.parent.coordonnees  # on reste sur la meme case
-                neighbor.h += 20  # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
+                neighbor.h += 20  # penalité ajoutée a l'heuristique
                 neighbor.map[neighbor.action_case] = HC.EMPTY
                 penalities_cases = get_penalties_guards(map_temp) + get_penalties_civils(map_temp)
                 for case in penalities_cases:
                     if neighbor.coordonnees == case:
                         neighbor.h += 100
+                add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set)
             if map_temp[neighbor.coordonnees] == HC.TARGET and map_temp[neighbor.coordonnees] == goal.coordonnees:
                 neighbor.action = Action.TUER_TARGET
                 neighbor.action_case = neighbor.coordonnees
@@ -94,21 +103,47 @@ def a_star(map, start, goal):
                 for case in penalities_cases:
                     if neighbor.coordonnees == case:
                         neighbor.h += 100
+                add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set)
             ##Tester de prendre le costume
-            if map_temp[neighbor.coordonnees] in [HC.EMPTY, HC.PIANO_WIRE, HC.TARGET, HC.SUIT, HC.CIVIL_E, HC.CIVIL_W, HC.CIVIL_N, HC.CIVIL_S]:
+            if map_temp[neighbor.coordonnees] in [HC.EMPTY, HC.PIANO_WIRE, HC.TARGET, HC.SUIT, HC.CIVIL_E, HC.CIVIL_W,
+                                                  HC.CIVIL_N, HC.CIVIL_S]:
                 neighbor.action = Action.AVANCER
-            neighbor.parent = current
-            neighbor.g = current.g + 1
+                add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set)
 
-            # idée pour eviter les cases où regardent les gardes
-            if neighbor.coordonnees in get_penalties_guards(map_temp):
-                neighbor.h += 5  # penalité ajoutée a l'heuristique (si je mets genre +10 ca rame trop longtemps quand la map devient un peu complexe)
+        map_temp = current.map
+        if current.got_suit and not current.suit_on_hitman:
+            neighbor = Case(current.coordonnees, copy_map(current.map))
+            neighbor.action = Action.METTRE_COSTUME
+            neighbor.suit_on_hitman = True
+            neighbor.got_suit = True
+            add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set)
 
-            neighbor.h += math.sqrt((neighbor.coordonnees[0] - goal.coordonnees[0]) ** 2) + math.sqrt((
-                    (neighbor.coordonnees[1] - goal.coordonnees[1]) ** 2))
-            neighbor.f = neighbor.g + neighbor.h
-            heapq.heappush(open_set, (neighbor.f, next(counter), neighbor))
+        if map_temp[current.coordonnees] == HC.SUIT and not current.got_suit:
+            neighbor = Case(current.coordonnees, copy_map(current.map))
+            neighbor.action = Action.RAMASSER_COSTUME
+            neighbor.got_suit = True
+            neighbor.suit_on_hitman = False
+            neighbor.map[neighbor.coordonnees] = HC.EMPTY
+            add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set)
+
     return None
+
+
+def add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set):
+    # idée pour eviter les cases où regardent les gardes
+    penalities_guards = get_penalties_guards(map_temp)
+    for case in penalities_guards:
+        if neighbor.coordonnees == case and not neighbor.suit_on_hitman and not neighbor.coordonnees in [HC.CIVIL_W, HC.CIVIL_E, HC.CIVIL_N, HC.CIVIL_S]:
+            neighbor.h += 5
+    penalities_cases = get_penalties_guards(map_temp) + get_penalties_civils(map_temp)
+    for case in penalities_cases:
+        if neighbor.coordonnees == case and neighbor.action == Action.METTRE_COSTUME:
+            neighbor.h += 100
+    neighbor.g = current.g + 1
+    neighbor.h += math.sqrt((neighbor.coordonnees[0] - goal.coordonnees[0]) ** 2) + math.sqrt((
+            (neighbor.coordonnees[1] - goal.coordonnees[1]) ** 2))
+    neighbor.f = neighbor.g + neighbor.h
+    heapq.heappush(open_set, (neighbor.f, next(counter), neighbor))
 
 
 def copy_map(map):
@@ -141,63 +176,93 @@ def print_path(path):  # affiche le path avec les actions associées a réaliser
         return None
 
 
-def get_penalties_guards(map):  # fonction qui recupere les case où nous sommes repérées par un garde, ce met a jour qu'une fois la map modifié du coup
+def get_penalties_guards(
+        map):  # fonction qui recupere les case où nous sommes repérées par un garde, ce met a jour qu'une fois la map modifié du coup
     penalites = []
     for key, values in map.items():
+        stop = False
+        x, y = key[0], key[1]
         if values == HC.GUARD_S:
-            x, y = key[0], key[1]
-            if ((y - 1) >= 0) and map[(x, (y - 1))] == HC.EMPTY:
-                penalites.append(Case((x, (y - 1))).coordonnees)
-            if ((y - 2) >= 0) and map[(x, (y - 2))] == HC.EMPTY:
-                penalites.append(Case((x, (y - 2))).coordonnees)
+            for i in range(0, 3):
+                if not stop:
+                    if ((y - i) >= 0) and map[(x, (y - i))] not in [HC.WALL, HC.GUARD_N, HC.GUARD_E, HC.GUARD_W,
+                                                                    HC.GUARD_S, HC.TARGET, HC.CIVIL_E, HC.CIVIL_W,
+                                                                    HC.CIVIL_N, HC.CIVIL_S]:
+                        penalites.append(Case((x, (y - i))).coordonnees)
+                        if map[(x, (y - i))] != HC.EMPTY:
+                            stop = True
         if values == HC.GUARD_N:
-            x, y = key[0], key[1]
-            if ((y + 1) < N_ROW) and map[(x, (y + 1))] == HC.EMPTY:
-                penalites.append(Case((x, (y + 1))).coordonnees)
-            if ((y + 2) < N_ROW) and map[(x, (y + 2))] == HC.EMPTY:
-                penalites.append(Case((x, (y + 2))).coordonnees)
+            for i in range(0, 3):
+                if not stop:
+                    if ((y + i) < N_ROW) and map[(x, (y + i))] not in [HC.WALL, HC.GUARD_N, HC.GUARD_E, HC.GUARD_W,
+                                                                    HC.GUARD_S, HC.TARGET, HC.CIVIL_E, HC.CIVIL_W,
+                                                                    HC.CIVIL_N, HC.CIVIL_S]:
+                        penalites.append(Case((x, (y + i))).coordonnees)
+                        if map[(x, (y + i))] != HC.EMPTY:
+                            stop = True
         if values == HC.GUARD_E:
-            x, y = key[0], key[1]
-            if ((x + 1) < N_COL) and map[((x + 1), y)] == HC.EMPTY:
-                penalites.append(Case(((x + 1), y)).coordonnees)
-            if ((x + 2) < N_COL) and map[((x + 2), y)] == HC.EMPTY:
-                penalites.append(Case(((x + 2), y)).coordonnees)
+            for i in range(0, 3):
+                if not stop:
+                    if ((x + i) < N_COL) and map[(x + i, y)] not in [HC.WALL, HC.GUARD_N, HC.GUARD_E, HC.GUARD_W,
+                                                                     HC.GUARD_S, HC.TARGET, HC.CIVIL_E, HC.CIVIL_W,
+                                                                     HC.CIVIL_N, HC.CIVIL_S]:
+                        penalites.append(Case((x + i, y)).coordonnees)
+                        if map[(x + i, y)] != HC.EMPTY:
+                            stop = True
         if values == HC.GUARD_W:
-            x, y = key[0], key[1]
-            if ((x - 1) >= 0) and map[((x - 1), y)] == HC.EMPTY:
-                penalites.append(Case(((x - 1), y)).coordonnees)
-            if ((x - 2) >= 0) and map[((x - 2), y)] == HC.EMPTY:
-                penalites.append(Case(((x - 2), y)).coordonnees)
+            for i in range(0, 3):
+                if not stop:
+                    if ((x - i) >= 0) and map[(x - i, y)] not in [HC.WALL, HC.GUARD_N, HC.GUARD_E, HC.GUARD_W,
+                                                                  HC.GUARD_S, HC.TARGET, HC.CIVIL_E, HC.CIVIL_W,
+                                                                  HC.CIVIL_N, HC.CIVIL_S]:
+                        penalites.append(Case((x - i, y)).coordonnees)
+                        if map[(x - i, y)] != HC.EMPTY:
+                            stop = True
     return penalites
 
 
-def get_penalties_civils(map):  # fonction qui recupere les case où nous sommes repérées par un garde, ce met a jour qu'une fois la map modifié du coup
+def get_penalties_civils(
+        map):  # fonction qui recupere les case où nous sommes repérées par un garde, ce met a jour qu'une fois la map modifié du coup
     penalites = []
     for key, values in map.items():
+        stop = False
+        x, y = key[0], key[1]
         if values == HC.CIVIL_S:
-            x, y = key[0], key[1]
-            if ((y - 1) >= 0) and map[(x, (y - 1))] == HC.EMPTY:
-                penalites.append(Case((x, (y - 1))).coordonnees)
-            if ((y - 2) >= 0) and map[(x, (y - 2))] == HC.EMPTY:
-                penalites.append(Case((x, (y - 2))).coordonnees)
+            for i in range(0, 2):
+                if not stop:
+                    if ((y - i) >= 0) and map[(x, (y - i))] not in [HC.WALL, HC.GUARD_N, HC.GUARD_E, HC.GUARD_W,
+                                                                    HC.GUARD_S, HC.TARGET, HC.CIVIL_E, HC.CIVIL_W,
+                                                                    HC.CIVIL_N, HC.CIVIL_S]:
+                        penalites.append(Case((x, (y - i))).coordonnees)
+                        if map[(x, (y - i))] != HC.EMPTY:
+                            stop = True
         if values == HC.CIVIL_N:
-            x, y = key[0], key[1]
-            if ((y + 1) < N_ROW) and map[(x, (y + 1))] == HC.EMPTY:
-                penalites.append(Case((x, (y + 1))).coordonnees)
-            if ((y + 2) < N_ROW) and map[(x, (y + 2))] == HC.EMPTY:
-                penalites.append(Case((x, (y + 2))).coordonnees)
+            for i in range(0, 2):
+                if not stop:
+                    if ((y + i) >= 0) and map[(x, (y + i))] not in [HC.WALL, HC.GUARD_N, HC.GUARD_E, HC.GUARD_W,
+                                                                    HC.GUARD_S, HC.TARGET, HC.CIVIL_E, HC.CIVIL_W,
+                                                                    HC.CIVIL_N, HC.CIVIL_S]:
+                        penalites.append(Case((x, (y + i))).coordonnees)
+                        if map[(x, (y + i))] != HC.EMPTY:
+                            stop = True
         if values == HC.CIVIL_E:
-            x, y = key[0], key[1]
-            if ((x + 1) < N_COL) and map[((x + 1), y)] == HC.EMPTY:
-                penalites.append(Case(((x + 1), y)).coordonnees)
-            if ((x + 2) < N_COL) and map[((x + 2), y)] == HC.EMPTY:
-                penalites.append(Case(((x + 2), y)).coordonnees)
+            for i in range(0, 2):
+                if not stop:
+                    if ((x + i) < N_COL) and map[(x + i, y)] not in [HC.WALL, HC.GUARD_N, HC.GUARD_E, HC.GUARD_W,
+                                                                     HC.GUARD_S, HC.TARGET, HC.CIVIL_E, HC.CIVIL_W,
+                                                                     HC.CIVIL_N, HC.CIVIL_S]:
+                        penalites.append(Case((x + i, y)).coordonnees)
+                        if map[(x + i, y)] != HC.EMPTY:
+                            stop = True
         if values == HC.CIVIL_W:
-            x, y = key[0], key[1]
-            if ((x - 1) >= 0) and map[((x - 1), y)] == HC.EMPTY:
-                penalites.append(Case(((x - 1), y)).coordonnees)
-            if ((x - 2) >= 0) and map[((x - 2), y)] == HC.EMPTY:
-                penalites.append(Case(((x - 2), y)).coordonnees)
+            for i in range(0, 2):
+                if not stop:
+                    if ((x - i) >= 0) and map[(x - i, y)] not in [HC.WALL, HC.GUARD_N, HC.GUARD_E, HC.GUARD_W,
+                                                                  HC.GUARD_S, HC.TARGET, HC.CIVIL_E, HC.CIVIL_W,
+                                                                  HC.CIVIL_N, HC.CIVIL_S]:
+                        penalites.append(Case((x - i, y)).coordonnees)
+                        if map[(x - i, y)] != HC.EMPTY:
+                            stop = True
     return penalites
 
 
@@ -230,7 +295,6 @@ def update_map(map,
 
 
 def phase2_run(hr, path, status, map):
-
     print(path)
     for i in range(len(path)):
         # trouver l'orientation but
@@ -283,6 +347,12 @@ def phase2_run(hr, path, status, map):
         elif path[i].action == Action.TUER and str(map[path[i].action_case]).startswith('HC.GUARD'):
             status = hr.neutralize_guard()
             print(status)
+        elif path[i].action == Action.RAMASSER_COSTUME:
+            status = hr.take_suit()
+            print(status)
+        elif path[i].action == Action.METTRE_COSTUME:
+            status = hr.put_on_suit()
+            print(status)
     return status
 
 
@@ -306,14 +376,21 @@ def function_phase_2(HR, correct_map):
     status = phase2_run(HR, path, status, correct_map)  # fonction qui appelle l'arbitre
     correct_map = update_map(correct_map, path)  # modification que à la fin de la phase (pas opti)
 
+    case_corde.map = copy_map(path[-1].map)
+    case_corde.suit_on_hitman = path[-1].suit_on_hitman
+    case_corde.got_suite = path[-1].got_suit
+    print(case_corde.suit_on_hitman)
     print("loading...")
-    path = a_star(correct_map, case_corde, case_cible)
+    path = a_star(case_corde.map, case_corde, case_cible)
     print_path(path)
     status = phase2_run(HR, path, status, correct_map)
     correct_map = update_map(correct_map, path)  # modification que à la fin de la phase (pas opti)
 
     print("loading...")
-    path = a_star(correct_map, case_cible, case_depart)
+    case_cible.map = copy_map(path[-1].map)
+    case_cible.suit_on_hitman = path[-1].suit_on_hitman
+    case_cible.got_suite = path[-1].got_suit
+    path = a_star(case_cible.map, case_cible, case_depart)
     print_path(path)
     phase2_run(HR, path, status, correct_map)
 

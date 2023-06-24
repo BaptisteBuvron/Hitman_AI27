@@ -161,7 +161,7 @@ small_map_example = [
     [HC.EMPTY, HC.EMPTY, HC.EMPTY],
 ]
 
-world_example = big_map_example
+world_example = moyen_2
 
 complete_map_example = {
     (0, 5): HC.EMPTY,
