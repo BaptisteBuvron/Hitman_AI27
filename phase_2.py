@@ -94,10 +94,9 @@ def a_star(map, start, goal):
                 for case in penalities_cases:
                     if neighbor.coordonnees == case:
                         neighbor.h += 100
-            if map_temp[neighbor.coordonnees] == HC.EMPTY or map[neighbor.coordonnees] == HC.PIANO_WIRE or str(
-                    map_temp[neighbor.coordonnees]).startswith('HC.CIVIL') or map[neighbor.coordonnees] == HC.SUIT:
+            ##Tester de prendre le costume
+            if map_temp[neighbor.coordonnees] in [HC.EMPTY, HC.PIANO_WIRE, HC.TARGET, HC.SUIT, HC.CIVIL_E, HC.CIVIL_W, HC.CIVIL_N, HC.CIVIL_S]:
                 neighbor.action = Action.AVANCER
-
             neighbor.parent = current
             neighbor.g = current.g + 1
 
