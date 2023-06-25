@@ -32,6 +32,19 @@ Avant de démarrer le script Python, veuillez suivre les étapes ci-dessous :
    pip install -r requirements.txt
    ```
 
+## Gophersat
+
+Nous utilisons Gophersat comme solveur SAT, qui est un solveur SAT en ligne de commande écrit en Go.
+
+Pour utiliser le solveur Gophersat, vous devez ajouter le fichier exécutable correspondant à votre système d'exploitation dans le dossier "/gophersat" du projet. Le nom du fichier exécutable dépend de votre système d'exploitation :
+
+Pour Windows : gophersat.exe
+Pour Linux : gophersat
+Pour macOS (architecture AMD) : gophersat_1_13_darwin_amd64
+Pour macOS (architecture ARM) : gophersat_1_13_darwin_arm64
+Assurez-vous d'avoir téléchargé le fichier exécutable Gophersat correspondant à votre système d'exploitation et de l'avoir placé dans le dossier "/gophersat" du projet.
+
+
 ## Utilisation du script
 
 Pour exécuter le script principal, veuillez suivre les étapes suivantes :
