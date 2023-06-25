@@ -84,3 +84,9 @@ Une possibilité d'amélioration serait de faire appel au solveur pour trouver l
 
 ## Phase 2
 
+Pour la phase 2 nous avons opté pour un algorithme A* car il était plus optimisé pour choisir le chemin le plus rapide en prenant en compte les elements de la carte.
+Il permettait d'augmenter la distance jusqu'a notre objectif si nous voulons esquiver les gardes par exemple. 
+Notre algorithme nous retourne le chemin et nous associons les actions à chacune des cases à la fin de celui ci. 
+Nous avons pris la décision de découper notre parcours en 3 appels succesifs de l'algorithme A* (respectivement pour aller chercher l'arme, tuer la cible et revenir)
+
+Une possibilité d'amélioration est que l'heuristique n'est pas parfaitement gérée lorsqu'il tente de tuer des gardes. Le fait d'augmenter l'heuristique "à la main" provoque une lenteur de l'algorithme 
