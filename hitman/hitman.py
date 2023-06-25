@@ -155,7 +155,21 @@ moyen_2 = [[HC.GUARD_S, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMPTY, HC.EMP
 
 small_map_example = [
     [HC.TARGET, HC.PIANO_WIRE, HC.SUIT],
+    [HC.GUARD_E, HC.GUARD_N, HC.EMPTY],
     [HC.GUARD_E, HC.EMPTY, HC.EMPTY],
+    [HC.WALL, HC.WALL, HC.EMPTY],
+    [HC.EMPTY, HC.EMPTY, HC.EMPTY],
+]
+
+small_map_example_2 = [
+    [HC.EMPTY, HC.TARGET],
+    [HC.WALL, HC.CIVIL_N],
+    [HC.EMPTY, HC.PIANO_WIRE],
+]
+
+small_map_example_3 = [
+    [HC.TARGET, HC.PIANO_WIRE, HC.SUIT],
+    [HC.GUARD_E, HC.GUARD_N, HC.GUARD_N],
     [HC.GUARD_E, HC.EMPTY, HC.EMPTY],
     [HC.WALL, HC.WALL, HC.EMPTY],
     [HC.EMPTY, HC.EMPTY, HC.EMPTY],

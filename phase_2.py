@@ -1,4 +1,5 @@
 # ajout d'avancer sur la case quand je tue un civil et/ou un garde.
+from copy import copy
 
 from hitman.hitman import HC
 import heapq
@@ -35,7 +36,23 @@ class Case:
 
     # to string
     def __repr__(self):
-        return f"({self.coordonnees}, {self.f} + {self.g}, {self.action}, {self.action_case})"
+        return f"({self.coordonnees}, {self.f}, {self.action}, {self.action_case})"
+    def __lt__(self, other):
+        return self.f < other.f
+
+    def __le__(self, other):
+        return self.f <= other.f
+
+    def __copy__(self):
+        case = Case(self.coordonnees, self.map)
+        case.g = self.g
+        case.h = self.h
+        case.parent = self.parent
+        case.action = self.action
+        case.action_case = self.action_case
+        case.got_suit = self.got_suit
+        case.suit_on_hitman = self.suit_on_hitman
+        return case
 
     def get_neighbors(self):
         neighbors = []
@@ -44,7 +61,9 @@ class Case:
         for coord in coord_voisins:
             # Vérifier si les coordonnées du voisin sont valides et que ce ne sont pas des murs
             if 0 <= coord[0] < N_COL and 0 <= coord[1] < N_ROW and self.map.get(coord) != HC.WALL:
-                case = Case(coord, copy_map(self.map))
+                case = Case(coord, self.map)
+                case.g = self.g
+                case.h = self.h
                 case.parent = self
                 neighbors.append(case)
         return (neighbors)
@@ -52,18 +71,18 @@ class Case:
 
 def a_star(map, start, goal):
     open_set = []  # Noeuds à explorer
-    i = 0
-    counter = count()
     first_case = Case(start.coordonnees, copy_map(map))
-    heapq.heappush(open_set, (start.f, next(counter), first_case))
+    heapq.heappush(open_set, (start.f, first_case))
     # si i depasse 1000, alors cela retourne None, cela veut dire que le goal n'est pas atteignable
     while open_set:  # evite les boucles infinies
-        i = i + 1
-        current = heapq.heappop(open_set)[2]
+        current = heapq.heappop(open_set)[1]
         current_map = current.map
         if current.coordonnees == goal.coordonnees:
             if current_map[current.coordonnees] == HC.PIANO_WIRE:
                 current.action = Action.RAMASSER_ARME
+                temp_map = copy(current.map)
+                temp_map[current.coordonnees] = HC.EMPTY
+                current.map = temp_map
             if current_map[current.coordonnees] == HC.TARGET:
                 current.action = Action.TUER_TARGET
             # Retourner le chemin si nous avons atteint le nœud objectif
@@ -82,68 +101,87 @@ def a_star(map, start, goal):
             neighbor.suit_on_hitman = current.suit_on_hitman
             neighbor.parent = current
 
-            if neighbor.coordonnees in get_guard(map_temp) or map_temp[neighbor.coordonnees] in [HC.CIVIL_E, HC.CIVIL_N,
-                                                                                                 HC.CIVIL_S,
-                                                                                                 HC.CIVIL_W]:
-                neighbor.action = Action.TUER  # pour l'instant je mets dans neighbor car c'est plus simple et apres dans print_path je redecale les actions
-                neighbor.action_case = neighbor.coordonnees
-                neighbor.coordonnees = neighbor.parent.coordonnees  # on reste sur la meme case
-                neighbor.h += 20  # penalité ajoutée a l'heuristique
-                neighbor.map[neighbor.action_case] = HC.EMPTY
-                penalities_cases = get_penalties_guards(map_temp) + get_penalties_civils(map_temp)
-                for case in penalities_cases:
-                    if neighbor.coordonnees == case:
-                        neighbor.h += 100
-                add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set)
+            if map_temp[neighbor.coordonnees] in [HC.CIVIL_E, HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_W, HC.GUARD_E,
+                                                  HC.GUARD_N, HC.GUARD_S, HC.GUARD_W]:
+                x, y = neighbor.parent.coordonnees
+                x1, y1 = neighbor.coordonnees
+                if ((y > y1) and map_temp[neighbor.coordonnees] not in [HC.CIVIL_N, HC.GUARD_N]) or (
+                        (y1 > y) and map_temp[neighbor.coordonnees] not in [HC.CIVIL_S, HC.GUARD_S]) or (
+                        (x > x1) and map_temp[neighbor.coordonnees] not in [HC.CIVIL_E, HC.GUARD_E]) or (
+                        (x1 > x) and map_temp[neighbor.coordonnees] not in [HC.CIVIL_W, HC.GUARD_W]):
+                    neighbor_ = copy(neighbor)
+                    neighbor_.action = Action.TUER
+                    neighbor_.action_case = neighbor.coordonnees
+                    neighbor_.coordonnees = neighbor.parent.coordonnees  # on reste sur la meme case
+                    neighbor_.h += 20  # penalité ajoutée au cout
+                    neighbor_.map = copy(neighbor.map)
+                    neighbor_.map[neighbor_.action_case] = HC.EMPTY
+                    penalities_cases = get_penalties_guards(neighbor_.map) + get_penalties_civils(neighbor_.map)
+                    for case in penalities_cases:
+                        if neighbor_.coordonnees == case:
+                            neighbor_.h += 100
+                    add_to_neighbors(current, goal, map_temp, neighbor_, open_set)
             if map_temp[neighbor.coordonnees] == HC.TARGET and map_temp[neighbor.coordonnees] == goal.coordonnees:
-                neighbor.action = Action.TUER_TARGET
-                neighbor.action_case = neighbor.coordonnees
-                neighbor.map[neighbor.action_case] = HC.EMPTY
-                penalities_cases = get_penalties_guards(map_temp) + get_penalties_civils(map_temp)
+                neighbor_ = copy(neighbor)
+                neighbor_.action = Action.TUER_TARGET
+                neighbor_.action_case = neighbor_.coordonnees
+                neighbor_.map = copy(neighbor.map)
+                neighbor_.map[neighbor_.action_case] = HC.EMPTY
+                penalities_cases = get_penalties_guards(neighbor_.map) + get_penalties_civils(neighbor_.map)
                 for case in penalities_cases:
-                    if neighbor.coordonnees == case:
-                        neighbor.h += 100
-                add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set)
-            ##Tester de prendre le costume
+                    if neighbor_.coordonnees == case:
+                        neighbor_.h += 100
+                add_to_neighbors(current, goal, map_temp, neighbor_, open_set)
             if map_temp[neighbor.coordonnees] in [HC.EMPTY, HC.PIANO_WIRE, HC.TARGET, HC.SUIT, HC.CIVIL_E, HC.CIVIL_W,
                                                   HC.CIVIL_N, HC.CIVIL_S]:
-                neighbor.action = Action.AVANCER
-                add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set)
+                neighbor_ = copy(neighbor)
+                neighbor_.action = Action.AVANCER
+                add_to_neighbors(current, goal, map_temp, neighbor_, open_set)
 
         map_temp = current.map
         if current.got_suit and not current.suit_on_hitman:
-            neighbor = Case(current.coordonnees, copy_map(current.map))
+            neighbor = Case(current.coordonnees, current.map)
+            neighbor.g = current.g
+            neighbor.h = current.h
             neighbor.action = Action.METTRE_COSTUME
             neighbor.suit_on_hitman = True
             neighbor.got_suit = True
-            add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set)
+            neighbor.parent = current
+            add_to_neighbors(current, goal, map_temp, neighbor, open_set)
 
         if map_temp[current.coordonnees] == HC.SUIT and not current.got_suit:
             neighbor = Case(current.coordonnees, copy_map(current.map))
+            neighbor.g = current.g
+            neighbor.h = current.h
             neighbor.action = Action.RAMASSER_COSTUME
             neighbor.got_suit = True
             neighbor.suit_on_hitman = False
             neighbor.map[neighbor.coordonnees] = HC.EMPTY
-            add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set)
+            neighbor.parent = current
+            add_to_neighbors(current, goal, map_temp, neighbor, open_set)
 
     return None
 
 
-def add_to_neighbors(counter, current, goal, map_temp, neighbor, open_set):
+def add_to_neighbors(current, goal, map_temp, neighbor, open_set):
+    neighbor.parent = current
     # idée pour eviter les cases où regardent les gardes
     penalities_guards = get_penalties_guards(map_temp)
     for case in penalities_guards:
-        if neighbor.coordonnees == case and not neighbor.suit_on_hitman and not neighbor.coordonnees in [HC.CIVIL_W, HC.CIVIL_E, HC.CIVIL_N, HC.CIVIL_S]:
+        if neighbor.coordonnees == case and not neighbor.suit_on_hitman and not neighbor.coordonnees in [HC.CIVIL_W,
+                                                                                                         HC.CIVIL_E,
+                                                                                                         HC.CIVIL_N,
+                                                                                                         HC.CIVIL_S]:
             neighbor.h += 5
     penalities_cases = get_penalties_guards(map_temp) + get_penalties_civils(map_temp)
     for case in penalities_cases:
         if neighbor.coordonnees == case and neighbor.action == Action.METTRE_COSTUME:
             neighbor.h += 100
-    neighbor.g = current.g + 1
+    neighbor.g += 1
     neighbor.h += math.sqrt((neighbor.coordonnees[0] - goal.coordonnees[0]) ** 2) + math.sqrt((
             (neighbor.coordonnees[1] - goal.coordonnees[1]) ** 2))
     neighbor.f = neighbor.g + neighbor.h
-    heapq.heappush(open_set, (neighbor.f, next(counter), neighbor))
+    heapq.heappush(open_set, (neighbor.f, neighbor))
 
 
 def copy_map(map):
@@ -160,6 +198,7 @@ def print_path(path):  # affiche le path avec les actions associées a réaliser
         # je fais - 2 car je veux pas que l'avant derniere case prenne la valeur de la derniere
         for i in range(len(path) - 2):
             path[i].action = path[i + 1].action
+            path[i].action_case = path[i + 1].action_case
         if path[len(path) - 1].action == Action.AVANCER:  # cas pour revenir a la case de depart, il faut s'arreter
             path[len(path) - 1].action = None
         path[
@@ -176,8 +215,7 @@ def print_path(path):  # affiche le path avec les actions associées a réaliser
         return None
 
 
-def get_penalties_guards(
-        map):  # fonction qui recupere les case où nous sommes repérées par un garde, ce met a jour qu'une fois la map modifié du coup
+def get_penalties_guards(map):  # fonction qui recupere les case où nous sommes repérées par un garde, ce met a jour qu'une fois la map modifié du coup
     penalites = []
     for key, values in map.items():
         stop = False
@@ -195,8 +233,8 @@ def get_penalties_guards(
             for i in range(0, 3):
                 if not stop:
                     if ((y + i) < N_ROW) and map[(x, (y + i))] not in [HC.WALL, HC.GUARD_N, HC.GUARD_E, HC.GUARD_W,
-                                                                    HC.GUARD_S, HC.TARGET, HC.CIVIL_E, HC.CIVIL_W,
-                                                                    HC.CIVIL_N, HC.CIVIL_S]:
+                                                                       HC.GUARD_S, HC.TARGET, HC.CIVIL_E, HC.CIVIL_W,
+                                                                       HC.CIVIL_N, HC.CIVIL_S]:
                         penalites.append(Case((x, (y + i))).coordonnees)
                         if map[(x, (y + i))] != HC.EMPTY:
                             stop = True
@@ -295,10 +333,9 @@ def update_map(map,
 
 
 def phase2_run(hr, path, status, map):
-    print(path)
     for i in range(len(path)):
         # trouver l'orientation but
-        orientation = status["orientation"].value
+        orientation = status["orientation"]
         position = status["position"]
         if i < len(path) - 1:
             x, y = position
@@ -306,31 +343,45 @@ def phase2_run(hr, path, status, map):
                 x1, y1 = path[i].action_case
             else:
                 x1, y1 = path[i + 1].coordonnees
-            if x > x1:
-                orientation_but = 17  # Ouest
-            elif x < x1:
-                orientation_but = 15  # Est
-            elif y > y1:
-                orientation_but = 16  # Sud
-            elif y < y1:
-                orientation_but = 14  # Nord
-            if orientation - orientation_but == -3:
-                status = hr.turn_anti_clockwise()
-            elif orientation - orientation_but == -2:
-                status = hr.turn_anti_clockwise()
-                status = hr.turn_anti_clockwise()
-            elif orientation - orientation_but == -1:
-                status = hr.turn_clockwise()
-            elif orientation - orientation_but == 1:
-                status = hr.turn_anti_clockwise()
-            elif orientation - orientation_but == 2:
-                status = hr.turn_anti_clockwise()
-                status = hr.turn_anti_clockwise()
-            elif orientation - orientation_but == 3:
-                status = hr.turn_clockwise()
+            dx = x1 - x
+            dy = y1 - y
+            if dy > 0:
+                if orientation == HC.E:
+                    status = hr.turn_anti_clockwise()
+                elif orientation == HC.S:
+                    status = hr.turn_clockwise()
+                    status = hr.turn_clockwise()
+                elif orientation == HC.W:
+                    status = hr.turn_clockwise()
+            elif dy < 0:
+                if orientation == HC.N:
+                    status = hr.turn_clockwise()
+                    status = hr.turn_clockwise()
+                elif orientation == HC.E:
+                    status = hr.turn_clockwise()
+                elif orientation == HC.W:
+                    status = hr.turn_anti_clockwise()
+
+            print(orientation, dx, dy, path[i + 1].coordonnees)
+            if dx > 0:
+                if orientation == HC.N:
+                    status = hr.turn_clockwise()
+                elif orientation == HC.S:
+                    status = hr.turn_anti_clockwise()
+                elif orientation == HC.W:
+                    status = hr.turn_clockwise()
+                    status = hr.turn_clockwise()
+            elif dx < 0:
+                if orientation == HC.N:
+                    status = hr.turn_anti_clockwise()
+                elif orientation == HC.E:
+                    status = hr.turn_clockwise()
+                    status = hr.turn_clockwise()
+                elif orientation == HC.S:
+                    status = hr.turn_clockwise()
 
         # Maintenant faire l'action de la case
-        print(path[i])
+
         if path[i].action == Action.AVANCER:
             status = hr.move()
             print(status)
@@ -373,26 +424,26 @@ def function_phase_2(HR, correct_map):
     print("loading...")
     path = a_star(correct_map, case_depart, case_corde)
     print_path(path)
-    status = phase2_run(HR, path, status, correct_map)  # fonction qui appelle l'arbitre
-    correct_map = update_map(correct_map, path)  # modification que à la fin de la phase (pas opti)
+    status = phase2_run(HR, path, status, path[0].map)  # fonction qui appelle l'arbitre
 
     case_corde.map = copy_map(path[-1].map)
     case_corde.suit_on_hitman = path[-1].suit_on_hitman
     case_corde.got_suite = path[-1].got_suit
     print(case_corde.suit_on_hitman)
     print("loading...")
-    path = a_star(case_corde.map, case_corde, case_cible)
+    path = a_star(copy(case_corde.map), case_corde, case_cible)
+    print(path)
     print_path(path)
-    status = phase2_run(HR, path, status, correct_map)
-    correct_map = update_map(correct_map, path)  # modification que à la fin de la phase (pas opti)
+    print(path)
+    status = phase2_run(HR, path, status, path[0].map)
 
     print("loading...")
     case_cible.map = copy_map(path[-1].map)
     case_cible.suit_on_hitman = path[-1].suit_on_hitman
     case_cible.got_suite = path[-1].got_suit
-    path = a_star(case_cible.map, case_cible, case_depart)
+    path = a_star(copy_map(case_cible.map), case_cible, case_depart)
     print_path(path)
-    phase2_run(HR, path, status, correct_map)
+    phase2_run(HR, path, status, path[0].map )
 
     _, score, history = HR.end_phase2()
     pprint(history)
