@@ -13,10 +13,11 @@ HR: HitmanReferee
 ClausesManager: ClausesManager
 N_ROW = 10
 N_COL = 10
+debug = False
 
 
 def main():
-    global ClausesManager, N_ROW, N_COL
+    global ClausesManager, N_ROW, N_COL, debug
     global HR
     HR = HitmanReferee()
     status = HR.start_phase1()
@@ -25,11 +26,11 @@ def main():
     room = [[0 for j in range(status["n"])] for i in range(status["m"])]
     position = status["position"]
     room[N_ROW - 1 - int(position[1])][int(position[0])] = HC.EMPTY
-    debug = True
     ClausesManager = ClausesManager(status["m"], status["n"], status["guard_count"], status["civil_count"], debug)
     ClausesManager.analyse_status(status, room)
 
     correct_map = start_exploring(room, status)
+    input("\nAppuyez sur entrée pour continuer avec la phase 2...")
 
     # Start phase 2
     function_phase_2(HR, correct_map)
@@ -37,8 +38,8 @@ def main():
 
 def start_exploring(room, status):
     # TODO change move
-    #explore(room, set(), status)
-    #explore_dfs(room, status)
+    # explore(room, set(), status)
+    # explore_dfs(room, status)
     explore_v3(room, status)
     # transform room to map_info: Dict[Tuple[int, int], List[HC]]
     map_info = {}
@@ -49,10 +50,10 @@ def start_exploring(room, status):
     print(HR.send_content(map_info))
     success, score, history, correct_map = HR.end_phase1()
     print("Success: ", success)
-    print("Score: ", score)
     print("Correct map: ", correct_map)
+    print("Score de la phase 1: ", score)
 
-    #ClausesManager.write_dimacs_files(ClausesManager.clauses)
+    # ClausesManager.write_dimacs_files(ClausesManager.clauses)
     return correct_map
 
 
@@ -109,7 +110,7 @@ def explore_v3(room, status):
         move = get_best_move(room, position, orientation, ClausesManager)
         actions = get_actions_moves(position, move, orientation)
         action = actions[0]
-        print("actions",actions)
+        print("actions", actions)
         if action == "turn_anti_clockwise":
             status = HR.turn_anti_clockwise()
             ClausesManager.analyse_status(status, room)
@@ -126,11 +127,11 @@ def explore_v3(room, status):
         orientation = HC(status["orientation"])
         print("move: ", move)
         print("action: ", action)
-        #try deduct arroud:
         if not ClausesManager.debug:
-            positions = get_adjacent_positions(position, room)
-            deducted += ClausesManager.deduct(room)
-        #input("press enter to continue")
+            # deduct only 4 cases arround the hitman
+            positions = ClausesManager.get_positions_around(position, 2)
+            deducted += ClausesManager.deduct(room, positions)
+        # input("press enter to continue")
         pass
 
     pass
@@ -316,7 +317,7 @@ def explore_dfs(room, status):
         print("neighbors", neighbors)
         print("guarded", ClausesManager.guarded_positions)
         for successor in neighbors:
-            #TODO not visited
+            # TODO not visited
             if is_valid_position(successor, room) and successor not in visited:
                 successors_score.append((successor, get_successor_score(successor, room, ClausesManager,
                                                                         get_orientation_case(position, successor))))

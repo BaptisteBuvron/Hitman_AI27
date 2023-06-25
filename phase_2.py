@@ -447,5 +447,5 @@ def function_phase_2(HR, correct_map):
 
     _, score, history = HR.end_phase2()
     pprint(history)
-
+    print("Fin de la phase 2 : ")
     pprint(score)
