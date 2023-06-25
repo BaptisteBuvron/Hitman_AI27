@@ -61,7 +61,7 @@ Pour exécuter le script principal, veuillez suivre les étapes suivantes :
 2. Le script démarrera et exécutera les algorithmes nécessaires pour résoudre le problème du projet Hitman.
 
 Si l'exécution de la phase 1 prend trop de temps, il est possible de désactiver la création des clauses en passant la
-variable `debug` à True.
+variable `debug` à True dans le fichier `main.py`.
 
 ## Modélisation SAT
 
