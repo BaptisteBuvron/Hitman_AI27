@@ -9,7 +9,12 @@ from typing import List
 from sympy import symbols, to_cnf
 
 from hitman.hitman import HC
-from movement import move_forward, is_inside_room, opposite_orientation_guard, guard_orientation_to_orientation
+from movement import (
+    move_forward,
+    is_inside_room,
+    opposite_orientation_guard,
+    guard_orientation_to_orientation,
+)
 from utils import OS
 
 
@@ -20,10 +25,27 @@ class Type(Enum):
 
 
 class ClausesManager:
-    all_types = [HC.GUARD_E, HC.GUARD_N, HC.GUARD_S, HC.GUARD_W, HC.CIVIL_E, HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_W,
-                 HC.TARGET, HC.SUIT, HC.PIANO_WIRE, HC.EMPTY, HC.WALL, Type.GUARD, Type.CIVIL]
+    all_types = [
+        HC.GUARD_E,
+        HC.GUARD_N,
+        HC.GUARD_S,
+        HC.GUARD_W,
+        HC.CIVIL_E,
+        HC.CIVIL_N,
+        HC.CIVIL_S,
+        HC.CIVIL_W,
+        HC.TARGET,
+        HC.SUIT,
+        HC.PIANO_WIRE,
+        HC.EMPTY,
+        HC.WALL,
+        Type.GUARD,
+        Type.CIVIL,
+    ]
 
-    def __init__(self, N_ROW: int, N_COL: int, N_GUARDS: int, N_CIVILS: int, debug: bool = False):
+    def __init__(
+        self, N_ROW: int, N_COL: int, N_GUARDS: int, N_CIVILS: int, debug: bool = False
+    ):
         self.visited = set()
         self.clauses = []
         self.variables = {}
@@ -46,10 +68,14 @@ class ClausesManager:
                 for type in HC:
                     if type not in [HC.N, HC.S, HC.E, HC.W]:
                         # I = row, J = COL
-                        self.variables["_".join([str(type.value), str(i), str(j)])] = variable
+                        self.variables[
+                            "_".join([str(type.value), str(i), str(j)])
+                        ] = variable
                         variable += 1
                 for type in Type:
-                    self.variables["_".join([str(type.value), str(i), str(j)])] = variable
+                    self.variables[
+                        "_".join([str(type.value), str(i), str(j)])
+                    ] = variable
                     variable += 1
 
     def get_variable(self, type, row: int, col: int):
@@ -73,7 +99,10 @@ class ClausesManager:
                         for type2 in HC:
                             if type2 not in [HC.N, HC.S, HC.E, HC.W] and type != type2:
                                 self.clauses.append(
-                                    [-self.get_variable(type, i, j), -self.get_variable(type2, i, j)]
+                                    [
+                                        -self.get_variable(type, i, j),
+                                        -self.get_variable(type2, i, j),
+                                    ]
                                 )
 
         # Clauses 3: The cell PIANO_WIRE / Target / Suit exists only one time
@@ -97,7 +126,10 @@ class ClausesManager:
                         if i != k or j != l:
                             for type in [HC.PIANO_WIRE, HC.SUIT, HC.TARGET]:
                                 self.clauses.append(
-                                    [-self.get_variable(type, i, j), -self.get_variable(type, k, l)]
+                                    [
+                                        -self.get_variable(type, i, j),
+                                        -self.get_variable(type, k, l),
+                                    ]
                                 )
 
         # If a cell is a GUARD, the cell is GUARD_N, GUARD_S, GUARD_E or GUARD_W
@@ -131,9 +163,17 @@ class ClausesManager:
         for i in range(0, self.N_COL):
             for j in range(0, self.N_ROW):
                 self.clauses.append(
-                    [self.get_variable(Type.LISTENING, i, j), -self.get_variable(Type.GUARD, i, j)])
+                    [
+                        self.get_variable(Type.LISTENING, i, j),
+                        -self.get_variable(Type.GUARD, i, j),
+                    ]
+                )
                 self.clauses.append(
-                    [self.get_variable(Type.LISTENING, i, j), -self.get_variable(Type.CIVIL, i, j)])
+                    [
+                        self.get_variable(Type.LISTENING, i, j),
+                        -self.get_variable(Type.CIVIL, i, j),
+                    ]
+                )
 
         positions = []
         for i in range(0, self.N_COL):
@@ -143,7 +183,12 @@ class ClausesManager:
             self.create_clauses_max_type(positions, [Type.GUARD], self.N_GUARDS)
             self.create_clauses_max_type(positions, [Type.CIVIL], self.N_CIVILS)
 
-    def create_clauses_max_type(self, positions: List, types: List, max: int, ):
+    def create_clauses_max_type(
+        self,
+        positions: List,
+        types: List,
+        max: int,
+    ):
         # Il y a exactement 2 guards test array 3*3
         # get all values of dict
         values = list(self.variables.values())
@@ -158,7 +203,10 @@ class ClausesManager:
         number = 0
         for comb in combinations:
             print(
-                "Treatment of combination " + str(number) + " / " + str(len(combinations))
+                "Treatment of combination "
+                + str(number)
+                + " / "
+                + str(len(combinations))
             )
             number += 1
             other = []
@@ -204,18 +252,33 @@ class ClausesManager:
             # TODO Add unsafe cells (gards, walls)
             if room[self.N_ROW - 1 - int(vision[0][1])][int(vision[0][0])] == 0:
                 # (0,0) is the bottom left corner
-                room[self.N_ROW - 1 - int(vision[0][1])][int(vision[0][0])] = HC(vision[1])
+                room[self.N_ROW - 1 - int(vision[0][1])][int(vision[0][0])] = HC(
+                    vision[1]
+                )
                 self.clauses.append(
-                    [self.get_variable(HC(vision[1]), int(vision[0][0]), int(vision[0][1]))]
+                    [
+                        self.get_variable(
+                            HC(vision[1]), int(vision[0][0]), int(vision[0][1])
+                        )
+                    ]
                 )
                 self.SEENS.append((int(vision[0][0]), int(vision[0][1])))
                 for type in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
                     if HC(vision[1]) == type:
                         for i in range(1, 3):
-                            position_guarded = move_forward(vision[0], guard_orientation_to_orientation(type), i)
-                            if is_inside_room(position_guarded, self.N_ROW, self.N_COL) and \
-                                    room[self.N_ROW - 1 - int(position_guarded[1])][int(position_guarded[0])] not in [
-                                HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
+                            position_guarded = move_forward(
+                                vision[0], guard_orientation_to_orientation(type), i
+                            )
+                            if is_inside_room(
+                                position_guarded, self.N_ROW, self.N_COL
+                            ) and room[self.N_ROW - 1 - int(position_guarded[1])][
+                                int(position_guarded[0])
+                            ] not in [
+                                HC.CIVIL_N,
+                                HC.CIVIL_S,
+                                HC.CIVIL_E,
+                                HC.CIVIL_W,
+                            ]:
                                 self.guarded_positions.append(position_guarded)
 
         if status["is_in_guard_range"]:
@@ -225,7 +288,11 @@ class ClausesManager:
                 for step in range(1, 3):
                     pos = move_forward(status["position"], orientation, step)
                     if is_inside_room(pos, self.N_ROW, self.N_COL):
-                        clauses.append(self.get_variable(opposite_orientation_guard(orientation), pos[0], pos[1]))
+                        clauses.append(
+                            self.get_variable(
+                                opposite_orientation_guard(orientation), pos[0], pos[1]
+                            )
+                        )
             self.clauses.append(clauses)
 
         else:
@@ -247,9 +314,16 @@ class ClausesManager:
                 #                                                                               HC.PIANO_WIRE, HC.SUIT]]
                 hear = status["hear"]
                 for position in positions:
-                    if room[self.N_ROW - 1 - int(position[1])][int(position[0])] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E,
-                                                                                     HC.GUARD_W, HC.CIVIL_N, HC.CIVIL_S,
-                                                                                     HC.CIVIL_E, HC.CIVIL_W]:
+                    if room[self.N_ROW - 1 - int(position[1])][int(position[0])] in [
+                        HC.GUARD_N,
+                        HC.GUARD_S,
+                        HC.GUARD_E,
+                        HC.GUARD_W,
+                        HC.CIVIL_N,
+                        HC.CIVIL_S,
+                        HC.CIVIL_E,
+                        HC.CIVIL_W,
+                    ]:
                         positions.remove(position)
                         hear -= 1
                 if hear > 0 and not self.debug:
@@ -270,7 +344,9 @@ class ClausesManager:
         self.check_current_directory()
         # Write the clauses in a file if exists replace it
         with open("gophersat/hitman.cnf", "w") as f:
-            f.write("p cnf " + str(len(self.variables)) + " " + str(len(clauses)) + "\n")
+            f.write(
+                "p cnf " + str(len(self.variables)) + " " + str(len(clauses)) + "\n"
+            )
             for clause in clauses:
                 f.write(" ".join([str(x) for x in clause]) + " 0\n")
         pass
@@ -317,7 +393,9 @@ class ClausesManager:
         positions = []
         for i in range(-radius, radius + 1):
             for j in range(-radius, radius + 1):
-                if is_inside_room((position[0] + i, position[1] + j), self.N_ROW, self.N_COL):
+                if is_inside_room(
+                    (position[0] + i, position[1] + j), self.N_ROW, self.N_COL
+                ):
                     positions.append((position[0] + i, position[1] + j))
         positions.remove(position)
         return positions
@@ -334,7 +412,14 @@ class ClausesManager:
                     clauses_temp.append([-self.get_variable(type, i, j)])
                     self.write_dimacs_files(clauses_temp)
                     if not self.execute_gophersat():
-                        print("Found a solution : " + str(type) + " at " + str(i) + " " + str(j))
+                        print(
+                            "Found a solution : "
+                            + str(type)
+                            + " at "
+                            + str(i)
+                            + " "
+                            + str(j)
+                        )
                         if type not in [Type.GUARD, Type.CIVIL]:
                             room[self.N_ROW - 1 - j][i] = type
                             self.clauses.append([self.get_variable(type, i, j)])

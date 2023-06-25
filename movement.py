@@ -68,24 +68,25 @@ def is_blocked(room, visited, position, orientation, n_row, n_col):
     # If all square arround are walls,guard or visited
     turn = turn_clockwise(orientation)
     if (
-            is_valid_position(move_forward(position, orientation), room)
-            and move_forward(position, orientation) not in visited
+        is_valid_position(move_forward(position, orientation), room)
+        and move_forward(position, orientation) not in visited
     ):
         return False
     if (
-            is_valid_position(move_forward(position, turn), room)
-            and move_forward(position, turn) not in visited
+        is_valid_position(move_forward(position, turn), room)
+        and move_forward(position, turn) not in visited
     ):
         return False
     if (
-            is_valid_position(
-                move_forward(position, turn_anti_clockwise(orientation)), room)
-            and move_forward(position, turn_anti_clockwise(orientation)) not in visited
+        is_valid_position(
+            move_forward(position, turn_anti_clockwise(orientation)), room
+        )
+        and move_forward(position, turn_anti_clockwise(orientation)) not in visited
     ):
         return False
     if (
-            is_valid_position(move_forward(position, turn_clockwise(turn)), room)
-            and move_forward(position, turn_clockwise(turn)) not in visited
+        is_valid_position(move_forward(position, turn_clockwise(turn)), room)
+        and move_forward(position, turn_clockwise(turn)) not in visited
     ):
         return False
     return True
@@ -224,19 +225,39 @@ def guard_orientation_to_orientation(orientation):
 
 def get_successor_score(successor, room, ClausesManager, orientation):
     n_row = len(room)
-    if room[n_row - 1 - int(successor[1])][int(successor[0])] in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E,
-                                                                  HC.CIVIL_W]:
-        return 2 + (count_max_new_cells_discovered(room, successor, orientation)*5)
-    elif (successor in ClausesManager.guarded_positions) and room[n_row - 1 - int(successor[1])][
-        int(successor[0])] not in [HC.WALL, HC.GUARD_N, HC.GUARD_S, HC.GUARD_E,
-                                   HC.GUARD_W]:
+    if room[n_row - 1 - int(successor[1])][int(successor[0])] in [
+        HC.CIVIL_N,
+        HC.CIVIL_S,
+        HC.CIVIL_E,
+        HC.CIVIL_W,
+    ]:
+        return 2 + (count_max_new_cells_discovered(room, successor, orientation) * 5)
+    elif (successor in ClausesManager.guarded_positions) and room[
+        n_row - 1 - int(successor[1])
+    ][int(successor[0])] not in [
+        HC.WALL,
+        HC.GUARD_N,
+        HC.GUARD_S,
+        HC.GUARD_E,
+        HC.GUARD_W,
+    ]:
         return -5
-    if room[n_row - 1 - int(successor[1])][int(successor[0])] in [HC.EMPTY, HC.TARGET, HC.SUIT, HC.PIANO_WIRE]:
-        return 1 + (count_max_new_cells_discovered(room, successor, orientation)*5)
+    if room[n_row - 1 - int(successor[1])][int(successor[0])] in [
+        HC.EMPTY,
+        HC.TARGET,
+        HC.SUIT,
+        HC.PIANO_WIRE,
+    ]:
+        return 1 + (count_max_new_cells_discovered(room, successor, orientation) * 5)
 
-    elif room[n_row - 1 - int(successor[1])][int(successor[0])] not in [HC.WALL, HC.GUARD_N, HC.GUARD_S, HC.GUARD_E,
-                                                                        HC.GUARD_W]:
-        return 5 + (count_max_new_cells_discovered(room, successor, orientation)*5)
+    elif room[n_row - 1 - int(successor[1])][int(successor[0])] not in [
+        HC.WALL,
+        HC.GUARD_N,
+        HC.GUARD_S,
+        HC.GUARD_E,
+        HC.GUARD_W,
+    ]:
+        return 5 + (count_max_new_cells_discovered(room, successor, orientation) * 5)
 
 
 def count_max_new_cells_discovered(room, position, orientation):
@@ -249,18 +270,27 @@ def count_max_new_cells_discovered(room, position, orientation):
     """
     count = 0
     # Hitman can see 3 cells in front of him
-    for i in range(1,4):
-        if is_valid_position(move_forward(position, orientation, i), room) and get_type_of_room(room, move_forward(position, orientation, i)) not in (HC.CIVIL_S, HC.CIVIL_N, HC.CIVIL_E, HC.CIVIL_W):
-            position_new = move_forward(position, orientation,i)
+    for i in range(1, 4):
+        if is_valid_position(
+            move_forward(position, orientation, i), room
+        ) and get_type_of_room(room, move_forward(position, orientation, i)) not in (
+            HC.CIVIL_S,
+            HC.CIVIL_N,
+            HC.CIVIL_E,
+            HC.CIVIL_W,
+        ):
+            position_new = move_forward(position, orientation, i)
             if not is_position_discovered(position_new, room):
                 count += 1
         else:
             return count
     return count
 
+
 def get_type_of_room(room, position):
     N_ROW = len(room)
     return room[N_ROW - 1 - int(position[1])][int(position[0])]
+
 
 def is_position_discovered(position, room):
     """
@@ -289,7 +319,17 @@ def get_best_move(room, position, orientation, ClausesManager):
     successors = get_adjacent_positions(position, room, orientation)
     successors_scores = []
     for successor in successors:
-        successors_scores.append((successor, get_successor_score(successor, room, ClausesManager, get_orientation_case(position, successor))))
+        successors_scores.append(
+            (
+                successor,
+                get_successor_score(
+                    successor,
+                    room,
+                    ClausesManager,
+                    get_orientation_case(position, successor),
+                ),
+            )
+        )
     successors_scores.sort(key=lambda x: x[1], reverse=True)
     if successors_scores[0][1] < 5:
         print("Dijkstra")
@@ -298,16 +338,32 @@ def get_best_move(room, position, orientation, ClausesManager):
 
 
 def get_next_unexplored_position(room, position, ClauseManager):
-    #use dijkstra to get the next unexplored position
+    # use dijkstra to get the next unexplored position
     unexplored_position = []
     for i in range(len(room)):
         for j in range(len(room[0])):
-            if get_type_of_room(room, (j, i)) not in [HC.GUARD_E, HC.GUARD_N, HC.GUARD_S, HC.GUARD_W, HC.CIVIL_E, HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_W,
-                 HC.TARGET, HC.SUIT, HC.PIANO_WIRE, HC.EMPTY, HC.WALL]:
-                unexplored_position.append(((j, i), dijkstra(room, position, (j, i), ClauseManager)))
+            if get_type_of_room(room, (j, i)) not in [
+                HC.GUARD_E,
+                HC.GUARD_N,
+                HC.GUARD_S,
+                HC.GUARD_W,
+                HC.CIVIL_E,
+                HC.CIVIL_N,
+                HC.CIVIL_S,
+                HC.CIVIL_W,
+                HC.TARGET,
+                HC.SUIT,
+                HC.PIANO_WIRE,
+                HC.EMPTY,
+                HC.WALL,
+            ]:
+                unexplored_position.append(
+                    ((j, i), dijkstra(room, position, (j, i), ClauseManager))
+                )
     unexplored_position.sort(key=lambda x: x[1][1])
     print(unexplored_position)
     return unexplored_position[0][1][0][1]
+
 
 def get_neighbors(room, position):
     """
@@ -329,7 +385,9 @@ def get_neighbors(room, position):
             neighbors.append((new_x, new_y))
 
     return neighbors
-def dijkstra(room, position,goal, ClausesManager):
+
+
+def dijkstra(room, position, goal, ClausesManager):
     """
     Dijkstra algorithm to find the shortest path between two points
     :param room:
@@ -340,16 +398,27 @@ def dijkstra(room, position,goal, ClausesManager):
     room_priority = [[0] * len(room[0]) for _ in range(len(room))]
     for j in range(len(room)):
         for i in range(len(room[0])):
-            if (i,j) in ClausesManager.guarded_positions and get_type_of_room(room, (i,j)) not in [HC.WALL, HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
+            if (i, j) in ClausesManager.guarded_positions and get_type_of_room(
+                room, (i, j)
+            ) not in [HC.WALL, HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
                 room_priority[j][i] = 5
-            elif get_type_of_room(room, (i,j)) in [HC.EMPTY, HC.TARGET, HC.SUIT, HC.PIANO_WIRE, HC.CIVIL_E, HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_W]:
+            elif get_type_of_room(room, (i, j)) in [
+                HC.EMPTY,
+                HC.TARGET,
+                HC.SUIT,
+                HC.PIANO_WIRE,
+                HC.CIVIL_E,
+                HC.CIVIL_N,
+                HC.CIVIL_S,
+                HC.CIVIL_W,
+            ]:
                 room_priority[j][i] = 1
             else:
                 room_priority[j][i] = 1000000000
     room_priority[goal[1]][goal[0]] = 0
 
     # Initialize the distance matrix with infinite values
-    distances = [[float('inf')] * len(room[0]) for _ in range(len(room))]
+    distances = [[float("inf")] * len(room[0]) for _ in range(len(room))]
     distances[position[1]][position[0]] = 0
 
     # Create a priority queue to store the vertices and their distances
@@ -371,7 +440,9 @@ def dijkstra(room, position,goal, ClausesManager):
 
         # Explore all neighboring vertices
         for neighbor in get_neighbors(room, current_vertex):
-            neighbor_distance = current_distance + room_priority[neighbor[1]][neighbor[0]]
+            neighbor_distance = (
+                current_distance + room_priority[neighbor[1]][neighbor[0]]
+            )
 
             # Update the distance and previous vertex if a shorter path is found
             if neighbor_distance < distances[neighbor[1]][neighbor[0]]:
@@ -388,6 +459,5 @@ def dijkstra(room, position,goal, ClausesManager):
     path.append(position)
     path.reverse()
     return path, distances[goal[1]][goal[0]]
-
 
     pass

@@ -2,9 +2,19 @@ from typing import NamedTuple
 
 from ClausesManager import ClausesManager
 from hitman.hitman import HC, HitmanReferee
-from movement import move_forward, turn_anti_clockwise, is_valid_position, is_blocked, turn_clockwise, \
-    positions_are_adjacent, get_actions_moves, get_adjacent_positions, get_successor_score, get_orientation_case, \
-    get_best_move
+from movement import (
+    move_forward,
+    turn_anti_clockwise,
+    is_valid_position,
+    is_blocked,
+    turn_clockwise,
+    positions_are_adjacent,
+    get_actions_moves,
+    get_adjacent_positions,
+    get_successor_score,
+    get_orientation_case,
+    get_best_move,
+)
 from phase_2 import function_phase_2
 
 # globals
@@ -26,7 +36,9 @@ def main():
     room = [[0 for j in range(status["n"])] for i in range(status["m"])]
     position = status["position"]
     room[N_ROW - 1 - int(position[1])][int(position[0])] = HC.EMPTY
-    ClausesManager = ClausesManager(status["m"], status["n"], status["guard_count"], status["civil_count"], debug)
+    ClausesManager = ClausesManager(
+        status["m"], status["n"], status["guard_count"], status["civil_count"], debug
+    )
     ClausesManager.analyse_status(status, room)
 
     correct_map = start_exploring(room, status)
@@ -81,16 +93,16 @@ def explore(room, visited, status):
             explore(room, visited, HR.turn_clockwise())
 
     if (
-            is_valid_position(
-                move_forward(position, turn_anti_clockwise(orientation)), room
-            )
-            and move_forward(position, turn_anti_clockwise(orientation)) not in visited
+        is_valid_position(
+            move_forward(position, turn_anti_clockwise(orientation)), room
+        )
+        and move_forward(position, turn_anti_clockwise(orientation)) not in visited
     ):
         print("TURN ANTI CLOCKWISE")
         explore(room, visited, HR.turn_anti_clockwise())
     elif (
-            is_valid_position(move_forward(position, orientation), room)
-            and move_forward(position, orientation) not in visited
+        is_valid_position(move_forward(position, orientation), room)
+        and move_forward(position, orientation) not in visited
     ):
         print("GO FORWARD")
         explore(room, visited, HR.move())
@@ -206,7 +218,9 @@ def explore_dfs_v1(room, status):
                             ClausesManager.analyse_status(status, room)
                             orientation = HC(status["orientation"])
                         elif action == "move":
-                            if is_valid_position(move_forward(position, orientation), room):
+                            if is_valid_position(
+                                move_forward(position, orientation), room
+                            ):
                                 if is_adjacent:
                                     neighbors = get_adjacent_positions(cur, room)
                                     movements.append(position)
@@ -301,7 +315,9 @@ def explore_dfs(room, status):
                             ClausesManager.analyse_status(status, room)
                             orientation = HC(status["orientation"])
                         elif action == "move":
-                            if is_valid_position(move_forward(position, orientation), room):
+                            if is_valid_position(
+                                move_forward(position, orientation), room
+                            ):
                                 if is_adjacent:
                                     neighbors = get_adjacent_positions(cur, room)
                                     movements.append(position)
@@ -319,8 +335,17 @@ def explore_dfs(room, status):
         for successor in neighbors:
             # TODO not visited
             if is_valid_position(successor, room) and successor not in visited:
-                successors_score.append((successor, get_successor_score(successor, room, ClausesManager,
-                                                                        get_orientation_case(position, successor))))
+                successors_score.append(
+                    (
+                        successor,
+                        get_successor_score(
+                            successor,
+                            room,
+                            ClausesManager,
+                            get_orientation_case(position, successor),
+                        ),
+                    )
+                )
         print("successors_score", successors_score)
         # get max successor
 
@@ -352,8 +377,16 @@ def explore_dfs(room, status):
             for successor in neighbors:
                 if is_valid_position(successor, room) and successor not in visited:
                     successors_score.append(
-                        (successor, get_successor_score(successor, room, ClausesManager,
-                                                        get_orientation_case(position, successor))))
+                        (
+                            successor,
+                            get_successor_score(
+                                successor,
+                                room,
+                                ClausesManager,
+                                get_orientation_case(position, successor),
+                            ),
+                        )
+                    )
         if is_discovered(room):
             break
         successor_max = successors_score[0]
