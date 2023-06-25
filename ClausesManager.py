@@ -148,7 +148,7 @@ class ClausesManager:
         # get all values of dict
         values = list(self.variables.values())
         ls = symbols(" ".join([str(i) for i in values]))
-        if len(positions)> 60:
+        if len(positions) > 60:
             print("TOO MANY POSITIONS: skip")
             return
         combinations = list(itertools.combinations(positions, max))
